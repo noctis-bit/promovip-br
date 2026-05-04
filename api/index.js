@@ -21,7 +21,8 @@ function getSupabase() {
     return createClient(url, key);
 }
 
-async function extractFirstImageFromPage(pdfDoc, pageIndex) {
+// Extração de imagem melhorada
+async function extractImage(pdfDoc, pageIndex) {
     try {
         const page = pdfDoc.getPage(pageIndex);
         const { xObjectNames } = page.node;
@@ -29,31 +30,32 @@ async function extractFirstImageFromPage(pdfDoc, pageIndex) {
         for (const name of xObjectNames()) {
             const xObject = page.node.resources().lookup(name);
             if (xObject && xObject.get('Subtype')?.toString() === '/Image') {
-                const imageBytes = xObject.contents;
-                if (!imageBytes) continue;
+                const bytes = xObject.contents;
+                if (!bytes || bytes.length < 1000) continue; // Pula ícones pequenos
+                
                 let contentType = 'image/jpeg';
                 const filter = xObject.get('Filter')?.toString();
-                if (filter === '/FlateDecode') contentType = 'image/png';
-                return { bytes: imageBytes, contentType };
+                if (filter?.includes('Flate')) contentType = 'image/png';
+                
+                return { bytes, contentType };
             }
         }
-    } catch (e) { console.error('Erro imagem:', e.message); }
+    } catch (e) { console.error('Erro ao extrair imagem:', e.message); }
     return null;
 }
 
 app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
-
         const dataBuffer = fs.readFileSync(req.file.path);
         const supabase = getSupabase();
         const globalCoupon = req.body.coupon || "";
 
-        // Capturar texto página por página com precisão
         const pagesText = [];
         await pdf(dataBuffer, {
             pagerender: (pageData) => {
                 return pageData.getTextContent().then((textContent) => {
+                    // Preserva a estrutura de linhas
                     const text = textContent.items.map(item => item.str).join(' ');
                     pagesText.push(text);
                     return text;
@@ -65,57 +67,42 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
         const totalPages = pdfDoc.getPageCount();
         const newPromos = [];
 
-        console.log(`PDF carregado: ${totalPages} páginas reais identificadas.`);
-
         for (let i = 0; i < totalPages; i++) {
             const pageText = pagesText[i] || "";
-            if (!pageText.trim()) continue;
-
             const links = [...new Set(pageText.match(/(https?:\/\/[^\s]+)/g) || [])];
             if (!links.length) continue;
 
             let productImage = "assets/placeholder.png";
-            const imgData = await extractFirstImageFromPage(pdfDoc, i);
+            const imgData = await extractImage(pdfDoc, i);
             if (imgData) {
                 try {
                     const imgName = `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
-                    const { error: uploadError } = await supabase.storage
-                        .from('promos')
-                        .upload(imgName, imgData.bytes, { contentType: imgData.contentType });
-                    if (!uploadError) {
-                        productImage = supabase.storage.from('promos').getPublicUrl(imgName).data.publicUrl;
-                    }
-                } catch (e) { console.error('Erro storage:', e); }
+                    const { error } = await supabase.storage.from('promos').upload(imgName, imgData.bytes, { contentType: imgData.contentType });
+                    if (!error) productImage = supabase.storage.from('promos').getPublicUrl(imgName).data.publicUrl;
+                } catch (e) { console.error('Erro upload:', e); }
             }
 
             const prices = pageText.match(/R\$\s?(\d+[\d.,]*)/g);
             const price = prices ? prices[prices.length - 1] : "Consulte";
             
-            // Tenta pegar o nome: limpa espaços e pega a primeira parte significativa do texto
-            const name = (pageText.split(' ').filter(s => s.length > 3)[0] || `Produto ${i + 1}`).substring(0, 100);
+            // Lógica de Nome Melhorada: Pega as primeiras palavras que não sejam links ou preços
+            const nameParts = pageText.split(' ')
+                .filter(w => w.length > 2 && !w.includes('http') && !w.includes('R$'))
+                .slice(0, 8); // Pega as primeiras 8 palavras significativas
+            const name = nameParts.length > 0 ? nameParts.join(' ') : `Produto ${i + 1}`;
 
             newPromos.push({
-                name: name.trim(), 
-                old_price: "---", 
-                current_price: price, 
+                name: name.substring(0, 100), 
+                old_price: "---", current_price: price, 
                 discount: globalCoupon ? `CUPOM: ${globalCoupon}` : "Oferta!",
-                image: productImage,
-                affiliate_link: links[0],
-                urgency: "Verificado!", 
-                coupon: globalCoupon
+                image: productImage, affiliate_link: links[0], urgency: "Verificado!", coupon: globalCoupon
             });
         }
 
-        if (newPromos.length > 0) {
-            const { error: dbError } = await supabase.from('promos').insert(newPromos);
-            if (dbError) throw dbError;
-        }
-
+        if (newPromos.length > 0) await supabase.from('promos').insert(newPromos);
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.json({ message: 'Sucesso!', count: newPromos.length });
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: error.message });
     }
 });

@@ -316,6 +316,10 @@
                 data.promos.forEach(p => {
                     const row = document.createElement('div');
                     row.className = 'item-row';
+                    const safeName = p.name.replace(/'/g, "\\'");
+                    const safePrice = (p.currentPrice || "").replace(/'/g, "\\'");
+                    const safeLink = (p.affiliateLink || "").replace(/'/g, "\\'");
+
                     row.innerHTML = `
                         <div class="item-info">
                             <img src="${p.image}" class="item-thumb" onerror="this.src='assets/placeholder.png'">
@@ -325,7 +329,7 @@
                             </div>
                         </div>
                         <div>
-                            <button class="btn-edit" onclick="openEditModal('${p.id}', '${p.name}', '${p.currentPrice}', '${p.affiliateLink}')">Editar</button>
+                            <button class="btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}')">Editar</button>
                             <button class="btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
                         </div>
                     `;

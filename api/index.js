@@ -112,7 +112,7 @@ app.get('/api/promos', async (req, res) => {
 });
 
 // NOVO: Detetive de Imagem (Busca imagem real no link da loja)
-app.get('/api/scrape-image', async (req, res) => {
+app.get('/api/image-finder', async (req, res) => {
     const { url } = req.query;
     if (!url || url === '#') return res.status(400).json({ error: 'URL inválida' });
 

@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="product-name">${promo.name}</h2>
                 <div class="price-container">
                     <div class="price-row">
-                        <span class="current-price">R$ ${promo.currentPrice.replace('R$', '').trim()}</span>
-                        <span class="old-price">${promo.oldPrice}</span>
+                        <span class="current-price">R$ ${(promo.currentPrice || "Consulte").replace('R$', '').trim()}</span>
+                        <span class="old-price">${promo.oldPrice || ""}</span>
                     </div>
                     <div class="urgency-text">⚡ ${promo.urgency}</div>
                 </div>
@@ -96,10 +96,10 @@ function handleImageError(img) {
 
     console.log(`Iniciando recuperação de imagem para: ${term}`);
 
-    // 1. Tenta o Scraper de Elite (Busca no link da loja)
+    // 1. Tenta o Image Finder (Busca no link da loja)
     if (link && link !== '#' && !img.dataset.triedScraper) {
         img.dataset.triedScraper = 'true';
-        fetch(`/api/scrape-image?url=${encodeURIComponent(link)}`)
+        fetch(`/api/image-finder?url=${encodeURIComponent(link)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.image) {

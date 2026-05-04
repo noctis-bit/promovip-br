@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="card-image">
                 <img src="${imageSrc}" 
                      alt="${promo.name}" 
+                     data-link="${promo.affiliateLink}"
                      onerror="handleImageError(this, '${searchTerm}')">
             </div>
             <div class="card-content">
@@ -191,15 +192,23 @@ function copyCoupon(id) {
 }
 
 // Função de Fallback Inteligente para Imagens
-function handleImageError(img, term) {
-    // Se a imagem carregada for um placeholder que não queremos, forçamos a troca
-    if (img.src.includes('placeholder') && !img.dataset.triedSmartFallback) {
-        img.dataset.triedSmartFallback = 'true';
-        img.src = `https://loremflickr.com/800/800/${term}`;
-        return;
+async function handleImageError(img, term) {
+    // 1. Tenta buscar a imagem real no link da loja (Scraper)
+    const affiliateLink = img.dataset.link;
+    if (affiliateLink && affiliateLink !== '#' && !img.dataset.triedScraper) {
+        img.dataset.triedScraper = 'true';
+        console.log(`Buscando imagem oficial no link: ${affiliateLink}`);
+        try {
+            const res = await fetch(`/api/scrape-image?url=${encodeURIComponent(affiliateLink)}`);
+            const data = await res.json();
+            if (data.image) {
+                img.src = data.image;
+                return;
+            }
+        } catch (e) { console.warn('Erro ao raspar imagem:', e); }
     }
 
-    // Se a primeira tentativa de imagem inteligente (LoremFlickr) falhar
+    // 2. Se o scraper falhar ou não houver link, tenta imagem inteligente (LoremFlickr)
     if (!img.dataset.triedSmartFallback) {
         img.dataset.triedSmartFallback = 'true';
         console.log(`Fallback 1: Buscando imagem real para: ${term}`);

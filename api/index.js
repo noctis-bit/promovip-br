@@ -7,6 +7,8 @@ require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const pdf = require('pdf-parse');
 const { PDFDocument } = require('pdf-lib');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 const upload = multer({ dest: '/tmp' });
@@ -107,6 +109,32 @@ app.get('/api/promos', async (req, res) => {
         const { data: coupons } = await supabase.from('coupons').select('*, desc:description').order('created_at', { ascending: false });
         res.json({ promos, coupons });
     } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// NOVO: Detetive de Imagem (Busca imagem real no link da loja)
+app.get('/api/scrape-image', async (req, res) => {
+    const { url } = req.query;
+    if (!url || url === '#') return res.status(400).json({ error: 'URL inválida' });
+
+    try {
+        const response = await axios.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36' },
+            timeout: 5000
+        });
+        const $ = cheerio.load(response.data);
+        
+        // Tenta pegar a imagem das tags OpenGraph ou Twitter
+        const ogImage = $('meta[property="og:image"]').attr('content') || 
+                        $('meta[name="twitter:image"]').attr('content') ||
+                        $('link[rel="image_src"]').attr('href');
+
+        if (ogImage) {
+            return res.json({ image: ogImage });
+        }
+        res.status(404).json({ error: 'Imagem não encontrada no link' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao acessar o link da loja' });
+    }
 });
 
 // Atualizar apenas texto via API (Imagem agora é direto no front)

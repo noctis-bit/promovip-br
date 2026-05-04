@@ -21,29 +21,6 @@ function getSupabase() {
     return createClient(url, key);
 }
 
-// Extração de imagem melhorada
-async function extractImage(pdfDoc, pageIndex) {
-    try {
-        const page = pdfDoc.getPage(pageIndex);
-        const { xObjectNames } = page.node;
-        if (!xObjectNames) return null;
-        for (const name of xObjectNames()) {
-            const xObject = page.node.resources().lookup(name);
-            if (xObject && xObject.get('Subtype')?.toString() === '/Image') {
-                const bytes = xObject.contents;
-                if (!bytes || bytes.length < 1000) continue; // Pula ícones pequenos
-                
-                let contentType = 'image/jpeg';
-                const filter = xObject.get('Filter')?.toString();
-                if (filter?.includes('Flate')) contentType = 'image/png';
-                
-                return { bytes, contentType };
-            }
-        }
-    } catch (e) { console.error('Erro ao extrair imagem:', e.message); }
-    return null;
-}
-
 app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
@@ -55,8 +32,15 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
         await pdf(dataBuffer, {
             pagerender: (pageData) => {
                 return pageData.getTextContent().then((textContent) => {
-                    // Preserva a estrutura de linhas
-                    const text = textContent.items.map(item => item.str).join(' ');
+                    // Agrupa por posição Y para manter as linhas corretas
+                    const lines = {};
+                    textContent.items.forEach(item => {
+                        const y = Math.round(item.transform[5]);
+                        if (!lines[y]) lines[y] = [];
+                        lines[y].push(item.str);
+                    });
+                    const text = Object.keys(lines).sort((a, b) => b - a)
+                        .map(y => lines[y].join(' ')).join('\n');
                     pagesText.push(text);
                     return text;
                 });
@@ -72,30 +56,44 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             const links = [...new Set(pageText.match(/(https?:\/\/[^\s]+)/g) || [])];
             if (!links.length) continue;
 
-            let productImage = "assets/placeholder.png";
-            const imgData = await extractImage(pdfDoc, i);
-            if (imgData) {
-                try {
-                    const imgName = `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
-                    const { error } = await supabase.storage.from('promos').upload(imgName, imgData.bytes, { contentType: imgData.contentType });
-                    if (!error) productImage = supabase.storage.from('promos').getPublicUrl(imgName).data.publicUrl;
-                } catch (e) { console.error('Erro upload:', e); }
-            }
-
-            const prices = pageText.match(/R\$\s?(\d+[\d.,]*)/g);
-            const price = prices ? prices[prices.length - 1] : "Consulte";
+            const priceMatches = pageText.match(/R\$\s?(\d+[\d.,]*)/g);
+            const price = priceMatches ? priceMatches[priceMatches.length - 1] : "Consulte";
             
-            // Lógica de Nome Melhorada: Pega as primeiras palavras que não sejam links ou preços
-            const nameParts = pageText.split(' ')
-                .filter(w => w.length > 2 && !w.includes('http') && !w.includes('R$'))
-                .slice(0, 8); // Pega as primeiras 8 palavras significativas
-            const name = nameParts.length > 0 ? nameParts.join(' ') : `Produto ${i + 1}`;
+            // Pega a primeira linha que não seja vazia e não seja link
+            const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 3 && !l.includes('http'));
+            const name = lines[0] || `Produto ${i + 1}`;
+
+            let productImage = "assets/placeholder.png";
+            
+            // Tenta extrair a foto (método pdf-lib revisado)
+            try {
+                const page = pdfDoc.getPage(i);
+                const { xObjectNames } = page.node;
+                if (xObjectNames) {
+                    for (const xName of xObjectNames()) {
+                        const xObject = page.node.resources().lookup(xName);
+                        if (xObject && xObject.get('Subtype')?.toString() === '/Image') {
+                            const bytes = xObject.contents;
+                            if (bytes && bytes.length > 5000) { // Garante que não é um ícone pequeno
+                                const imgName = `p_${Date.now()}_${i}.jpg`;
+                                await supabase.storage.from('promos').upload(imgName, bytes, { contentType: 'image/jpeg' });
+                                productImage = supabase.storage.from('promos').getPublicUrl(imgName).data.publicUrl;
+                                break; 
+                            }
+                        }
+                    }
+                }
+            } catch (e) { console.error('Erro img:', e); }
 
             newPromos.push({
                 name: name.substring(0, 100), 
-                old_price: "---", current_price: price, 
+                old_price: "---", 
+                current_price: price, 
                 discount: globalCoupon ? `CUPOM: ${globalCoupon}` : "Oferta!",
-                image: productImage, affiliate_link: links[0], urgency: "Verificado!", coupon: globalCoupon
+                image: productImage,
+                affiliate_link: links[0],
+                urgency: "Verificado!",
+                coupon: globalCoupon
             });
         }
 

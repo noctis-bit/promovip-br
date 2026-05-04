@@ -43,7 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchTerm = encodeURIComponent(promo.name.split(' ').slice(0, 3).join(' '));
         
         // Se não houver imagem ou for o placeholder antigo, já usamos o fallback de cara
-        const isPlaceholder = !promo.image || promo.image.includes('placeholder') || promo.image === 'null' || promo.image === 'undefined';
+        const imgVal = String(promo.image).toLowerCase();
+        const isPlaceholder = !promo.image || imgVal.includes('placeholder') || imgVal.includes('ninja') || imgVal === 'null' || imgVal === 'undefined' || imgVal === '';
         const imageSrc = !isPlaceholder 
                          ? promo.image 
                          : `https://loremflickr.com/800/800/${searchTerm}`;

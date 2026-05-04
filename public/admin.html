@@ -4,168 +4,286 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin | PromoVIPBR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+        :root {
+            --red: #E50914;
+            --red-dark: #B2060F;
+            --dark: #0D0D0D;
+            --dark2: #1A1A1A;
+            --dark3: #242424;
+            --gray: #888;
+            --white: #FFFFFF;
+            --font-display: 'Barlow Condensed', sans-serif;
+            --font-body: 'Barlow', sans-serif;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--white);
+            font-family: var(--font-body);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
         .admin-container {
-            max-width: 800px;
-            margin: 50px auto;
+            max-width: 900px;
+            margin: 40px auto;
             padding: 40px;
-            background: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
+            background: var(--dark2);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .admin-header {
             text-align: center;
-        }
-        .admin-section {
             margin-bottom: 40px;
-            padding-bottom: 40px;
-            border-bottom: 1px solid var(--border);
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .admin-section:last-child {
-            border-bottom: none;
+
+        .admin-header h1 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 42px;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
         }
-        .upload-area {
-            border: 2px dashed var(--border);
-            padding: 30px;
-            border-radius: var(--radius-md);
-            margin: 20px 0;
+
+        .admin-header h1 span { color: var(--red); }
+        .admin-header p { color: var(--gray); font-size: 16px; }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: var(--dark3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--gray);
+            border-radius: 8px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
-        .upload-area:hover {
-            border-color: var(--primary);
-            background: rgba(225, 6, 0, 0.02);
+
+        .tab-btn:hover { color: var(--white); border-color: var(--red); }
+        .tab-btn.active { background: var(--red); color: var(--white); border-color: var(--red); }
+
+        .admin-section {
+            background: var(--dark3);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 24px;
         }
+
+        .admin-section h2 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 24px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .form-group {
+            margin-bottom: 20px;
             text-align: left;
-            margin-bottom: 15px;
         }
+
         .form-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-family: var(--font-display);
             font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--gray);
+            letter-spacing: 0.05em;
         }
+
         .form-group input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            background: var(--dark);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--white);
+            font-family: var(--font-body);
             font-size: 16px;
+            transition: border-color 0.2s;
         }
-        #status, #couponStatus {
-            margin-top: 20px;
-            font-weight: 600;
-            color: var(--text-muted);
+
+        .form-group input:focus { outline: none; border-color: var(--red); }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            margin-bottom: 20px;
         }
-        .loading-spinner {
-            display: none;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+
+        .upload-area:hover { border-color: var(--red); background: rgba(229,9,20,0.05); }
+        .upload-area p { font-weight: 600; color: var(--gray); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--red);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+
+        .btn-submit:hover { background: #FF3B3B; transform: translateY(-2px); }
+
         .list-container {
             margin-top: 20px;
-            text-align: left;
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
-            padding-right: 10px;
+            padding-right: 8px;
         }
+
         .item-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            margin-bottom: 10px;
-            background: #fafafa;
+            padding: 16px;
+            background: var(--dark);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
         }
+
+        .item-row:hover { border-color: rgba(229,9,20,0.3); }
+
         .item-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-        .item-thumb {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        .btn-delete {
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-        .btn-delete:hover {
-            background: #cc0000;
-        }
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-        .tab-btn {
-            padding: 10px 20px;
-            border: 1px solid var(--border);
-            background: white;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .tab-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+            gap: 16px;
         }
 
-        /* MODAL EDIT */
+        .item-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background: white;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .item-text strong {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .item-text small { color: var(--red); font-weight: 700; font-size: 14px; }
+
+        .btn-group { display: flex; gap: 8px; }
+
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .btn-edit { background: #3498db; color: white; }
+        .btn-delete { background: var(--red); color: white; }
+
+        .loading-spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* MODAL */
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
             z-index: 2000;
             align-items: center;
             justify-content: center;
         }
+
         .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: var(--radius-lg);
+            background: var(--dark2);
+            padding: 40px;
+            border-radius: 16px;
             width: 90%;
             max-width: 500px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .btn-edit {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-right: 5px;
+
+        .modal-content h3 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 28px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
         }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .footer-link a { color: var(--gray); font-size: 14px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em; }
+        .footer-link a:hover { color: var(--red); }
     </style>
     <!-- SUPABASE SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="admin-container">
-        <div class="admin-section">
-            <h1>Painel de Controle PromoVIPBR 🔥</h1>
-            <p>Gerencie seus anúncios, cupons e automações.</p>
-        </div>
+        <header class="admin-header">
+            <h1>Painel <span>Admin</span></h1>
+            <p>Gerenciamento de promoções, cupons e automações.</p>
+        </header>
 
         <div class="tabs">
             <button class="tab-btn active" onclick="showTab('automation')">Automação PDF</button>
@@ -176,28 +294,28 @@
         <!-- TAB: AUTOMAÇÃO PDF -->
         <div id="tab-automation" class="tab-content">
             <div class="admin-section">
-                <h2>Envio de PDF 📄</h2>
-                <p>Envie o PDF com 1 produto por página para extração automática.</p>
+                <h2>📄 Envio de PDF</h2>
+                <p style="color: var(--gray); font-size: 14px; margin-bottom: 20px;">Envie o PDF promocional para extração automática de dados e imagens.</p>
                 <form id="uploadForm">
                     <div class="upload-area" onclick="document.getElementById('pdfFile').click()">
-                        <p id="fileName">Clique aqui para selecionar o PDF</p>
+                        <p id="fileName">Clique para selecionar o PDF</p>
                         <input type="file" id="pdfFile" accept=".pdf" style="display: none" onchange="updateFileName()">
                     </div>
                     <div class="form-group">
-                        <label for="globalCoupon">Cupom para estes itens (opcional)</label>
+                        <label for="globalCoupon">Cupom Padrão (opcional)</label>
                         <input type="text" id="globalCoupon" placeholder="Ex: PROMO10">
                     </div>
-                    <button type="submit" class="btn-primary" style="width: 100%">Processar PDF agora</button>
+                    <button type="submit" class="btn-submit">Processar PDF agora</button>
                 </form>
                 <div class="loading-spinner" id="spinner"></div>
-                <div id="status"></div>
+                <div id="status" style="text-align:center; margin-top:15px; font-weight:700;"></div>
             </div>
         </div>
 
         <!-- TAB: ANÚNCIOS ATIVOS -->
         <div id="tab-products" class="tab-content" style="display: none">
             <div class="admin-section">
-                <h2>Gerenciar Anúncios 🛍️</h2>
+                <h2>🛍️ Gerenciar Anúncios</h2>
                 <div class="list-container" id="productList">
                     <!-- Carregado via JS -->
                 </div>
@@ -207,23 +325,25 @@
         <!-- TAB: CUPONS -->
         <div id="tab-coupons" class="tab-content" style="display: none">
             <div class="admin-section">
-                <h2>Gerenciar Cupons 🏷️</h2>
+                <h2>🏷️ Novo Cupom</h2>
                 <form id="couponForm">
-                    <div class="form-group"><label>Loja</label><input type="text" id="cpStore" required></div>
-                    <div class="form-group"><label>Desconto</label><input type="text" id="cpValue" required></div>
-                    <div class="form-group"><label>Código</label><input type="text" id="cpCode" required></div>
-                    <div class="form-group"><label>Descrição</label><input type="text" id="cpDesc"></div>
-                    <button type="submit" class="btn-primary" style="width: 100%; background: #2ecc71">Salvar Cupom</button>
+                    <div class="form-group"><label>Loja</label><input type="text" id="cpStore" placeholder="Ex: Shopee" required></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group"><label>Desconto</label><input type="text" id="cpValue" placeholder="Ex: 15%" required></div>
+                        <div class="form-group"><label>Código</label><input type="text" id="cpCode" placeholder="VIPBR15" required></div>
+                    </div>
+                    <div class="form-group"><label>Descrição</label><input type="text" id="cpDesc" placeholder="Em compras acima de R$100"></div>
+                    <button type="submit" class="btn-submit" style="background: #2ecc71">Salvar Cupom</button>
                 </form>
-                <div id="couponStatus"></div>
-                <div class="list-container" id="couponList">
+                <div id="couponStatus" style="text-align:center; margin-top:10px;"></div>
+                <div class="list-container" id="couponList" style="margin-top: 30px;">
                     <!-- Carregado via JS -->
                 </div>
             </div>
         </div>
 
-        <div style="margin-top: 20px;">
-            <a href="index.html" style="color: var(--text-muted); text-decoration: underline;">Voltar para o site</a>
+        <div class="footer-link">
+            <a href="index.html">← Voltar para o site</a>
         </div>
     </div>
 
@@ -250,8 +370,8 @@
                     <input type="file" id="editImage" accept="image/*">
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn-primary" style="flex: 1">Salvar Alterações</button>
-                    <button type="button" onclick="closeEditModal()" class="btn-delete" style="background: #95a5a6">Cancelar</button>
+                    <button type="submit" class="btn-submit" style="flex: 1">Salvar</button>
+                    <button type="button" onclick="closeEditModal()" class="btn-submit" style="background: #444; flex: 1">Voltar</button>
                 </div>
             </form>
         </div>
@@ -262,7 +382,20 @@
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tabName).style.display = 'block';
-            event.target.classList.add('active');
+            
+            // Fix: the event might not be passed if called from script directly
+            if (event) {
+                event.target.classList.add('active');
+            } else {
+                // Fallback to find the button by text or similar
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                   if(btn.textContent.toLowerCase().includes(tabName.toLowerCase()) || 
+                      (tabName === 'automation' && btn.textContent.includes('PDF'))) {
+                       btn.classList.add('active');
+                   }
+                });
+            }
+
             if (tabName === 'products') loadProducts();
             if (tabName === 'coupons') loadCoupons();
         }
@@ -270,7 +403,7 @@
         function updateFileName() {
             const input = document.getElementById('pdfFile');
             const fileName = document.getElementById('fileName');
-            if (input.files[0]) fileName.textContent = "Arquivo: " + input.files[0].name;
+            if (input.files[0]) fileName.textContent = "Selecionado: " + input.files[0].name;
         }
 
         // --- PDF ---
@@ -301,7 +434,7 @@
                     console.error('Erro detalhado:', result);
                 }
             } catch (error) { 
-                status.textContent = 'Erro de rede: Verifique se o servidor local está rodando.'; 
+                status.textContent = 'Erro de rede: Servidor não responde.'; 
                 status.style.color = '#e74c3c';
                 console.error(error);
             }
@@ -336,14 +469,14 @@
                     row.innerHTML = `
                         <div class="item-info">
                             <img src="${p.image}" class="item-thumb" onerror="this.src='assets/placeholder.png'">
-                            <div>
-                                <strong>${p.name}</strong><br>
+                            <div class="item-text">
+                                <strong>${p.name}</strong>
                                 <small>${p.currentPrice}</small>
                             </div>
                         </div>
-                        <div>
-                            <button class="btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}')">Editar</button>
-                            <button class="btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
+                        <div class="btn-group">
+                            <button class="btn-action btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}')">Editar</button>
+                            <button class="btn-action btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
                         </div>
                     `;
                     list.appendChild(row);
@@ -381,7 +514,6 @@
                 let imageUrl = null;
                 const imgFile = document.getElementById('editImage').files[0];
                 
-                // Upload Direto para o Supabase (Bypassing Vercel Limit)
                 if (imgFile && supabaseClient) {
                     const fileName = `direct_${Date.now()}_${imgFile.name}`;
                     const { data, error: uploadError } = await supabaseClient.storage
@@ -391,13 +523,9 @@
                     if (!uploadError) {
                         const { data: urlData } = supabaseClient.storage.from('promos').getPublicUrl(fileName);
                         imageUrl = urlData.publicUrl;
-                    } else {
-                        console.error('Erro no upload direto:', uploadError);
-                        alert('Erro ao subir imagem. Tente uma foto menor ou verifique a conexão.');
                     }
                 }
 
-                // Salva o resto no banco via API
                 const payload = {
                     name: document.getElementById('editName').value,
                     current_price: document.getElementById('editPrice').value,
@@ -433,11 +561,12 @@
                     const row = document.createElement('div');
                     row.className = 'item-row';
                     row.innerHTML = `
-                        <div>
-                            <strong>${c.store}</strong>: ${c.code}<br>
-                            <small>${c.value} - ${c.desc || ''}</small>
+                        <div class="item-text">
+                            <strong>${c.store}</strong>
+                            <small>${c.code} (${c.value})</small><br>
+                            <span style="font-size:12px; color:var(--gray)">${c.desc || ''}</span>
                         </div>
-                        <button class="btn-delete" onclick="deleteCoupon('${c.id}')">Excluir</button>
+                        <button class="btn-action btn-delete" onclick="deleteCoupon('${c.id}')">Excluir</button>
                     `;
                     list.appendChild(row);
                 });

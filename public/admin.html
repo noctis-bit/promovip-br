@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin | PromoVIPBR</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 40px;
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+        .admin-section {
+            margin-bottom: 40px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+        }
+        .admin-section:last-child {
+            border-bottom: none;
+        }
+        .upload-area {
+            border: 2px dashed var(--border);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(225, 6, 0, 0.02);
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 16px;
+        }
+        #status, #couponStatus {
+            margin-top: 20px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .loading-spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .list-container {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .item-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .btn-delete {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .btn-delete:hover {
+            background: #cc0000;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-section">
+            <h1>Painel de Controle PromoVIPBR 🔥</h1>
+            <p>Gerencie seus anúncios, cupons e automações.</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('automation')">Automação PDF</button>
+            <button class="tab-btn" onclick="showTab('products')">Anúncios Ativos</button>
+            <button class="tab-btn" onclick="showTab('coupons')">Cupons</button>
+        </div>
+
+        <!-- TAB: AUTOMAÇÃO PDF -->
+        <div id="tab-automation" class="tab-content">
+            <div class="admin-section">
+                <h2>Envio de PDF 📄</h2>
+                <p>Envie o PDF com 1 produto por página para extração automática.</p>
+                <form id="uploadForm">
+                    <div class="upload-area" onclick="document.getElementById('pdfFile').click()">
+                        <p id="fileName">Clique aqui para selecionar o PDF</p>
+                        <input type="file" id="pdfFile" accept=".pdf" style="display: none" onchange="updateFileName()">
+                    </div>
+                    <div class="form-group">
+                        <label for="globalCoupon">Cupom para estes itens (opcional)</label>
+                        <input type="text" id="globalCoupon" placeholder="Ex: PROMO10">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%">Processar PDF agora</button>
+                </form>
+                <div class="loading-spinner" id="spinner"></div>
+                <div id="status"></div>
+            </div>
+        </div>
+
+        <!-- TAB: ANÚNCIOS ATIVOS -->
+        <div id="tab-products" class="tab-content" style="display: none">
+            <div class="admin-section">
+                <h2>Gerenciar Anúncios 🛍️</h2>
+                <div class="list-container" id="productList">
+                    <!-- Carregado via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CUPONS -->
+        <div id="tab-coupons" class="tab-content" style="display: none">
+            <div class="admin-section">
+                <h2>Gerenciar Cupons 🏷️</h2>
+                <form id="couponForm">
+                    <div class="form-group"><label>Loja</label><input type="text" id="cpStore" required></div>
+                    <div class="form-group"><label>Desconto</label><input type="text" id="cpValue" required></div>
+                    <div class="form-group"><label>Código</label><input type="text" id="cpCode" required></div>
+                    <div class="form-group"><label>Descrição</label><input type="text" id="cpDesc"></div>
+                    <button type="submit" class="btn-primary" style="width: 100%; background: #2ecc71">Salvar Cupom</button>
+                </form>
+                <div id="couponStatus"></div>
+                <div class="list-container" id="couponList">
+                    <!-- Carregado via JS -->
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <a href="index.html" style="color: var(--text-muted); text-decoration: underline;">Voltar para o site</a>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabName).style.display = 'block';
+            event.target.classList.add('active');
+            if (tabName === 'products') loadProducts();
+            if (tabName === 'coupons') loadCoupons();
+        }
+
+        function updateFileName() {
+            const input = document.getElementById('pdfFile');
+            const fileName = document.getElementById('fileName');
+            if (input.files[0]) fileName.textContent = "Arquivo: " + input.files[0].name;
+        }
+
+        // --- PDF ---
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('pdfFile');
+            const status = document.getElementById('status');
+            const spinner = document.getElementById('spinner');
+            if (!fileInput.files[0]) return alert('Selecione um arquivo.');
+
+            const formData = new FormData();
+            formData.append('pdf', fileInput.files[0]);
+            formData.append('coupon', document.getElementById('globalCoupon').value);
+
+            status.textContent = 'Processando...';
+            spinner.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/upload-pdf', { method: 'POST', body: formData });
+                if (response.ok) {
+                    status.textContent = 'Sucesso! Redirecionando...';
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                } else {
+                    status.textContent = 'Erro no processamento.';
+                }
+            } catch (error) { status.textContent = 'Erro de conexão.'; }
+            finally { spinner.style.display = 'none'; }
+        });
+
+        // --- PRODUTOS ---
+        async function loadProducts() {
+            const list = document.getElementById('productList');
+            try {
+                const res = await fetch('/api/promos');
+                const data = await res.json();
+                list.innerHTML = '';
+                data.promos.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = 'item-row';
+                    row.innerHTML = `
+                        <div class="item-info">
+                            <img src="${p.image}" class="item-thumb" onerror="this.src='assets/placeholder.png'">
+                            <div>
+                                <strong>${p.name}</strong><br>
+                                <small>${p.currentPrice}</small>
+                            </div>
+                        </div>
+                        <button class="btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
+                    `;
+                    list.appendChild(row);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Excluir este anúncio?')) return;
+            await fetch(`/api/promos/${id}`, { method: 'DELETE' });
+            loadProducts();
+        }
+
+        // --- CUPONS ---
+        async function loadCoupons() {
+            const list = document.getElementById('couponList');
+            try {
+                const res = await fetch('/api/coupons');
+                const coupons = await res.json();
+                list.innerHTML = '';
+                coupons.forEach(c => {
+                    const row = document.createElement('div');
+                    row.className = 'item-row';
+                    row.innerHTML = `
+                        <div>
+                            <strong>${c.store}</strong>: ${c.code}<br>
+                            <small>${c.value} - ${c.desc || ''}</small>
+                        </div>
+                        <button class="btn-delete" onclick="deleteCoupon('${c.id}')">Excluir</button>
+                    `;
+                    list.appendChild(row);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('couponForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const coupon = {
+                store: document.getElementById('cpStore').value,
+                value: document.getElementById('cpValue').value,
+                code: document.getElementById('cpCode').value,
+                desc: document.getElementById('cpDesc').value
+            };
+            await fetch('/api/coupons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(coupon)
+            });
+            document.getElementById('couponForm').reset();
+            loadCoupons();
+        });
+
+        async function deleteCoupon(id) {
+            if (!confirm('Excluir este cupom?')) return;
+            await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
+            loadCoupons();
+        }
+    </script>
+</body>
+</html>

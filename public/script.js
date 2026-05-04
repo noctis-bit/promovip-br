@@ -1,0 +1,164 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // Atualiza o ano no rodapé automaticamente
+    const yearSpan = document.getElementById('year');
+    if (yearSpan) {
+        yearSpan.textContent = new Date().getFullYear();
+    }
+
+    // Smooth scroll para âncoras
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // --- CARREGAR PROMOÇÕES ---
+    async function loadPromos() {
+        const grid = document.querySelector('.offers-grid');
+        try {
+            const response = await fetch('/api/promos');
+            const data = await response.json();
+            
+            if (data.promos && data.promos.length > 0) {
+                grid.innerHTML = ''; // Limpa os estáticos
+                data.promos.forEach(promo => {
+                    const card = createProductCard(promo);
+                    grid.appendChild(card);
+                });
+                observeCards();
+            }
+        } catch (error) {
+            console.error('Erro ao carregar promoções:', error);
+        }
+    }
+
+    function createProductCard(promo) {
+        const article = document.createElement('article');
+        article.className = 'product-card';
+        article.innerHTML = `
+            <div class="discount-badge">${promo.discount}</div>
+            <div class="card-image">
+                <img src="${promo.image}" alt="${promo.name}" onerror="this.src='assets/placeholder.png'">
+            </div>
+            <div class="card-content">
+                <h2 class="product-name">${promo.name}</h2>
+                <div class="price-container">
+                    <span class="old-price">${promo.oldPrice}</span>
+                    <div class="current-price-wrapper">
+                        <span class="currency">R$</span>
+                        <span class="current-price">${promo.currentPrice.replace('R$', '').trim()}</span>
+                    </div>
+                    <div class="urgency-text pulse-text">⚡ ${promo.urgency}</div>
+                </div>
+                <a href="${promo.affiliateLink}" class="btn-offer" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
+            </div>
+        `;
+        return article;
+    }
+
+    // --- CARREGAR CUPONS ---
+    async function loadCoupons() {
+        const couponGrid = document.querySelector('.coupons-grid');
+        if (!couponGrid) return;
+
+        try {
+            const response = await fetch('/api/coupons');
+            const coupons = await response.json();
+
+            if (coupons && coupons.length > 0) {
+                couponGrid.innerHTML = '';
+                coupons.forEach((cp, index) => {
+                    const id = `cupom_dynamic_${index}`;
+                    const card = document.createElement('div');
+                    card.className = 'coupon-card';
+                    card.innerHTML = `
+                        <div class="coupon-store">${cp.store}</div>
+                        <div class="coupon-value">${cp.value}</div>
+                        <p class="coupon-desc">${cp.desc || ''}</p>
+                        <div class="coupon-code-box">
+                            <span class="coupon-code" id="${id}">${cp.code}</span>
+                            <button class="btn-copy" onclick="copyCoupon('${id}')">Copiar</button>
+                        </div>
+                    `;
+                    couponGrid.appendChild(card);
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar cupons');
+        }
+    }
+
+    function observeCards() {
+        const cards = document.querySelectorAll('.product-card');
+        const observerOptions = { threshold: 0.1 };
+
+        const cardObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }, index * 100);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        cards.forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+            cardObserver.observe(card);
+        });
+    }
+
+    loadPromos();
+    loadCoupons();
+
+    // --- NEWSLETTER ---
+    const newsletterWidget = document.getElementById('newsletterWidget');
+    const closeNewsletter = document.getElementById('closeNewsletter');
+    const newsletterForm = document.getElementById('newsletterForm');
+
+    if (closeNewsletter) {
+        closeNewsletter.addEventListener('click', () => {
+            newsletterWidget.style.display = 'none';
+        });
+    }
+
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = newsletterForm.querySelector('input').value;
+            alert(`Obrigado! O e-mail ${email} foi cadastrado.`);
+            newsletterWidget.style.display = 'none';
+            newsletterForm.reset();
+        });
+    }
+
+    setTimeout(() => {
+        if (newsletterWidget) {
+            newsletterWidget.style.transform = 'translateY(0)';
+            newsletterWidget.style.opacity = '1';
+        }
+    }, 5000);
+});
+
+function copyCoupon(id) {
+    const couponElement = document.getElementById(id);
+    const couponText = couponElement.innerText;
+    navigator.clipboard.writeText(couponText).then(() => {
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = 'Copiado!';
+        btn.style.backgroundColor = '#00C853';
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.backgroundColor = '';
+        }, 2000);
+    });
+}

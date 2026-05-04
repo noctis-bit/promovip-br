@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+uploads/
+scratch/
+data/promos.json
+public/assets/*.png
+!public/assets/placeholder.png
+.env
+.vercel

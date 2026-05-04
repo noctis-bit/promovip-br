@@ -128,6 +128,34 @@
             color: white;
             border-color: var(--primary);
         }
+
+        /* MODAL EDIT */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 500px;
+        }
+        .btn-edit {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -194,6 +222,36 @@
 
         <div style="margin-top: 20px;">
             <a href="index.html" style="color: var(--text-muted); text-decoration: underline;">Voltar para o site</a>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>Editar Anúncio ✏️</h3>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>Nome do Produto</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label>Preço</label>
+                    <input type="text" id="editPrice" required>
+                </div>
+                <div class="form-group">
+                    <label>Link de Afiliado</label>
+                    <input type="text" id="editLink" required>
+                </div>
+                <div class="form-group">
+                    <label>Nova Imagem (opcional)</label>
+                    <input type="file" id="editImage" accept="image/*">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-primary" style="flex: 1">Salvar Alterações</button>
+                    <button type="button" onclick="closeEditModal()" class="btn-delete" style="background: #95a5a6">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -266,7 +324,10 @@
                                 <small>${p.currentPrice}</small>
                             </div>
                         </div>
-                        <button class="btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
+                        <div>
+                            <button class="btn-edit" onclick="openEditModal('${p.id}', '${p.name}', '${p.currentPrice}', '${p.affiliateLink}')">Editar</button>
+                            <button class="btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
+                        </div>
                     `;
                     list.appendChild(row);
                 });
@@ -278,6 +339,39 @@
             await fetch(`/api/promos/${id}`, { method: 'DELETE' });
             loadProducts();
         }
+
+        // --- EDITAR ---
+        function openEditModal(id, name, price, link) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editPrice').value = price;
+            document.getElementById('editLink').value = link;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const formData = new FormData();
+            formData.append('name', document.getElementById('editName').value);
+            formData.append('current_price', document.getElementById('editPrice').value);
+            formData.append('affiliate_link', document.getElementById('editLink').value);
+            
+            const imgFile = document.getElementById('editImage').files[0];
+            if (imgFile) formData.append('image', imgFile);
+
+            await fetch(`/api/promos/${id}`, {
+                method: 'PUT',
+                body: formData
+            });
+
+            closeEditModal();
+            loadProducts();
+        });
 
         // --- CUPONS ---
         async function loadCoupons() {

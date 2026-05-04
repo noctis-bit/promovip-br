@@ -123,6 +123,39 @@ app.get('/api/promos', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Atualizar produto (incluindo upload manual de imagem)
+app.put('/api/promos/:id', upload.single('image'), async (req, res) => {
+    try {
+        const supabase = getSupabase();
+        const { id } = req.params;
+        const { name, current_price, affiliate_link } = req.body;
+        
+        let updateData = { 
+            name, 
+            current_price, 
+            affiliate_link 
+        };
+
+        if (req.file) {
+            const fileData = fs.readFileSync(req.file.path);
+            const fileName = `manual_${Date.now()}_${req.file.originalname}`;
+            const { error: uploadError } = await supabase.storage
+                .from('promos')
+                .upload(fileName, fileData, { contentType: req.file.mimetype });
+            
+            if (!uploadError) {
+                updateData.image = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
+            }
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        }
+
+        const { error } = await supabase.from('promos').update(updateData).eq('id', id);
+        if (error) throw error;
+        
+        res.json({ message: 'OK' });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.delete('/api/promos/:id', async (req, res) => {
     try {
         const supabase = getSupabase();

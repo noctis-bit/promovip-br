@@ -16,8 +16,8 @@ app.use(express.static('public'));
 app.use(express.json());
 
 // Inicializar Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 console.log('--- Verificação de Ambiente ---');
 console.log('SUPABASE_URL:', supabaseUrl ? 'Configurado' : 'MISSING');

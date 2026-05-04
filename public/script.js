@@ -191,15 +191,23 @@ function copyCoupon(id) {
 
 // Função de Fallback Inteligente para Imagens
 function handleImageError(img, term) {
-    // Evita loop infinito se a imagem de fallback também falhar
-    if (img.dataset.triedFallback) {
-        img.src = 'assets/placeholder.png'; // Placeholder final se tudo falhar
+    // Se a primeira tentativa de imagem inteligente (LoremFlickr) falhar
+    if (!img.dataset.triedSmartFallback) {
+        img.dataset.triedSmartFallback = 'true';
+        console.log(`Fallback 1: Buscando imagem real para: ${term}`);
+        img.src = `https://loremflickr.com/800/800/${term}`;
         return;
     }
     
-    img.dataset.triedFallback = 'true';
-    // Busca uma imagem aleatória relacionada ao nome do produto
-    img.src = `https://loremflickr.com/800/800/${term}`;
-    
-    console.log(`Imagem original falhou. Buscando fallback para: ${term}`);
+    // Se a imagem real falhar, usamos um fallback de texto dinâmico (Placehold.co)
+    if (!img.dataset.triedTextFallback) {
+        img.dataset.triedTextFallback = 'true';
+        console.log(`Fallback 2: Gerando imagem de texto para: ${term}`);
+        const cleanTerm = decodeURIComponent(term).replace(/[^\w\s]/gi, '');
+        img.src = `https://placehold.co/800x800/1a1a1a/e50914?text=${encodeURIComponent(cleanTerm)}`;
+        return;
+    }
+
+    // Se tudo falhar, removemos a imagem para não quebrar o layout
+    img.style.display = 'none';
 }

@@ -1,6 +1,5 @@
-/* BASE STYLES & VARIABLES */
 :root {
-    --primary: #E10600; /* Vermelho forte para conversão */
+    --primary: #E10600;
     --primary-hover: #C50500;
     --background: #F8F9FA;
     --surface: #FFFFFF;
@@ -16,6 +15,18 @@
     --radius-md: 12px;
     --radius-lg: 20px;
     --radius-pill: 99px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+    --background: #0F1113;
+    --surface: #1A1D21;
+    --text-main: #F8F9FA;
+    --text-muted: #ADB5BD;
+    --border: #2D3238;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.3);
+    --shadow-lg: 0 16px 32px rgba(225, 6, 0, 0.2);
 }
 
 * {
@@ -52,12 +63,40 @@ a {
 
 /* HERO SECTION */
 .hero {
-    background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
+    background: var(--surface);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
     padding: 80px 20px 60px;
     text-align: center;
     border-bottom: 1px solid var(--border);
     position: relative;
     overflow: hidden;
+    transition: var(--transition);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    font-size: 1.25rem;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1) rotate(15deg);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .hero::before {

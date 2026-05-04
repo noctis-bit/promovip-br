@@ -9,8 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script>
+        // Inicializar tema antes de renderizar para evitar flash branco
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
 </head>
 <body>
+    <button class="theme-toggle" id="themeToggle" title="Alternar Tema">
+        <span class="icon">🌓</span>
+    </button>
 
     <!-- HERO SECTION -->
     <header class="hero">

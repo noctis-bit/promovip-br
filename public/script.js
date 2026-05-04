@@ -39,10 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function createProductCard(promo) {
         const article = document.createElement('article');
         article.className = 'product-card';
+        // Geramos um termo de busca limpo para a imagem de fallback
+        const searchTerm = encodeURIComponent(promo.name.split(' ').slice(0, 3).join(' '));
+        
         article.innerHTML = `
             <div class="discount-badge">${promo.discount}</div>
             <div class="card-image">
-                <img src="${promo.image}" alt="${promo.name}" onerror="this.src='assets/placeholder.png'">
+                <img src="${promo.image}" 
+                     alt="${promo.name}" 
+                     onerror="handleImageError(this, '${searchTerm}')">
             </div>
             <div class="card-content">
                 <div class="promo-store">${promo.store || 'Loja Parceira'}</div>
@@ -169,10 +174,27 @@ function copyCoupon(id) {
         const btn = event.target;
         const originalText = btn.innerText;
         btn.innerText = 'Copiado!';
-        btn.style.backgroundColor = '#00C853';
+        btn.style.color = '#fff';
+        btn.style.backgroundColor = 'var(--red)';
         setTimeout(() => {
             btn.innerText = originalText;
             btn.style.backgroundColor = '';
+            btn.style.color = '';
         }, 2000);
     });
+}
+
+// Função de Fallback Inteligente para Imagens
+function handleImageError(img, term) {
+    // Evita loop infinito se a imagem de fallback também falhar
+    if (img.dataset.triedFallback) {
+        img.src = 'assets/placeholder.png'; // Placeholder final se tudo falhar
+        return;
+    }
+    
+    img.dataset.triedFallback = 'true';
+    // Busca uma imagem aleatória relacionada ao nome do produto
+    img.src = `https://loremflickr.com/800/800/${term}`;
+    
+    console.log(`Imagem original falhou. Buscando fallback para: ${term}`);
 }

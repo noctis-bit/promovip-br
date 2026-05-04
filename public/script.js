@@ -1,91 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Atualiza o ano no rodapé automaticamente
+    const offersGrid = document.querySelector('.offers-grid');
+    const couponGrid = document.querySelector('.cupons-grid');
     const yearSpan = document.getElementById('year');
-    if (yearSpan) {
-        yearSpan.textContent = new Date().getFullYear();
-    }
+    if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
-    // Smooth scroll para âncoras
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
+    // Carregar dados iniciais
+    loadContent();
 
-    // --- CARREGAR PROMOÇÕES ---
-    async function loadPromos() {
-        const grid = document.querySelector('.offers-grid');
+    async function loadContent() {
         try {
-            const response = await fetch('/api/promos');
-            const data = await response.json();
-            
+            const res = await fetch('/api/promos');
+            const data = await res.json();
+
             if (data.promos && data.promos.length > 0) {
-                grid.innerHTML = ''; // Limpa os estáticos
+                offersGrid.innerHTML = '';
                 data.promos.forEach(promo => {
-                    const card = createProductCard(promo);
-                    grid.appendChild(card);
+                    offersGrid.appendChild(createProductCard(promo));
                 });
-                observeCards();
             }
-        } catch (error) {
-            console.error('Erro ao carregar promoções:', error);
-        }
-    }
 
-    function createProductCard(promo) {
-        const article = document.createElement('article');
-        article.className = 'product-card';
-        // Geramos um termo de busca limpo para a imagem de fallback
-        const searchTerm = encodeURIComponent(promo.name.split(' ').slice(0, 3).join(' '));
-        
-        // Se não houver imagem ou for o placeholder antigo, já usamos o fallback de cara
-        const imgVal = String(promo.image).toLowerCase();
-        const isPlaceholder = !promo.image || imgVal.includes('placeholder') || imgVal.includes('ninja') || imgVal === 'null' || imgVal === 'undefined' || imgVal === '';
-        const imageSrc = !isPlaceholder 
-                         ? promo.image 
-                         : `https://loremflickr.com/800/800/${searchTerm}`;
-
-        article.innerHTML = `
-            <div class="discount-badge">${promo.discount}</div>
-            <div class="card-image">
-                <img src="${imageSrc}" 
-                     alt="${promo.name}" 
-                     data-link="${promo.affiliateLink}"
-                     onerror="handleImageError(this, '${searchTerm}')">
-            </div>
-            <div class="card-content">
-                <div class="promo-store">${promo.store || 'Loja Parceira'}</div>
-                <h2 class="product-name">${promo.name}</h2>
-                <div class="price-container">
-                    <div class="price-row">
-                        <span class="current-price">R$ ${promo.currentPrice.replace('R$', '').trim()}</span>
-                        <span class="old-price">${promo.oldPrice}</span>
-                    </div>
-                    <div class="urgency-text">⚡ ${promo.urgency}</div>
-                </div>
-                <a href="${promo.affiliateLink}" class="promo-btn featured" target="_blank" rel="noopener noreferrer">Pegar Oferta</a>
-            </div>
-        `;
-        return article;
-    }
-
-    // --- CARREGAR CUPONS ---
-    async function loadCoupons() {
-        const couponGrid = document.querySelector('.coupons-grid');
-        if (!couponGrid) return;
-
-        try {
-            const response = await fetch('/api/coupons');
-            const coupons = await response.json();
-
-            if (coupons && coupons.length > 0) {
+            if (data.coupons && data.coupons.length > 0) {
                 couponGrid.innerHTML = '';
-                coupons.forEach((cp, index) => {
-                    const id = `cupom_dynamic_${index}`;
+                data.coupons.forEach(cp => {
+                    const id = 'cp-' + Math.random().toString(36).substr(2, 9);
                     const card = document.createElement('div');
                     card.className = 'coupon-card';
                     card.innerHTML = `
@@ -104,76 +41,97 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         } catch (error) {
-            console.error('Erro ao carregar cupons');
+            console.error('Erro ao carregar conteúdo:', error);
         }
     }
 
-    function observeCards() {
-        const cards = document.querySelectorAll('.product-card');
-        const observerOptions = { threshold: 0.1 };
+    function createProductCard(promo) {
+        const article = document.createElement('article');
+        article.className = 'product-card';
+        
+        // Termo de busca limpo (3 primeiras palavras)
+        const cleanName = promo.name.replace(/[^\w\s]/gi, '');
+        const searchTerm = encodeURIComponent(cleanName.split(' ').slice(0, 3).join(' '));
+        
+        // Detecta se a imagem é inválida ou placeholder
+        const imgVal = String(promo.image).toLowerCase();
+        const isPlaceholder = !promo.image || imgVal.includes('placeholder') || imgVal.includes('ninja') || imgVal === 'null' || imgVal === 'undefined' || imgVal === '';
+        
+        // Se for inválida, já começa com o fallback do LoremFlickr
+        const imageSrc = !isPlaceholder ? promo.image : `https://loremflickr.com/800/800/${searchTerm},product`;
 
-        const cardObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach((entry, index) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }, index * 100);
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        cards.forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
-            cardObserver.observe(card);
-        });
-    }
-
-    loadPromos();
-    loadCoupons();
-
-    // --- NEWSLETTER ---
-    const newsletterWidget = document.getElementById('newsletterWidget');
-    const closeNewsletter = document.getElementById('closeNewsletter');
-    const newsletterForm = document.getElementById('newsletterForm');
-
-    if (closeNewsletter) {
-        closeNewsletter.addEventListener('click', () => {
-            newsletterWidget.style.display = 'none';
-        });
-    }
-
-    if (newsletterForm) {
-        newsletterForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = newsletterForm.querySelector('input').value;
-            alert(`Obrigado! O e-mail ${email} foi cadastrado.`);
-            newsletterWidget.style.display = 'none';
-            newsletterForm.reset();
-        });
-    }
-
-    setTimeout(() => {
-        if (newsletterWidget) {
-            newsletterWidget.classList.add('active');
-        }
-    }, 5000);
-
-    // --- MODO ESCURO / CLARO ---
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
+        article.innerHTML = `
+            <div class="discount-badge">${promo.discount}</div>
+            <div class="card-image">
+                <img src="${imageSrc}" 
+                     alt="${promo.name}" 
+                     data-link="${promo.affiliateLink || '#'}"
+                     data-term="${searchTerm}"
+                     onerror="handleImageError(this)">
+            </div>
+            <div class="card-content">
+                <div class="promo-store">${promo.store || 'Loja Parceira'}</div>
+                <h2 class="product-name">${promo.name}</h2>
+                <div class="price-container">
+                    <div class="price-row">
+                        <span class="current-price">R$ ${promo.currentPrice.replace('R$', '').trim()}</span>
+                        <span class="old-price">${promo.oldPrice}</span>
+                    </div>
+                    <div class="urgency-text">⚡ ${promo.urgency}</div>
+                </div>
+                <a href="${promo.affiliateLink}" class="promo-btn featured" target="_blank" rel="noopener noreferrer">Pegar Oferta</a>
+            </div>
+        `;
+        return article;
     }
 });
+
+// FUNÇÃO DE ERRO REFEITA (Sincrona que chama assíncrona)
+function handleImageError(img) {
+    if (img.dataset.handlingError) return;
+    img.dataset.handlingError = 'true';
+
+    const term = img.dataset.term || 'product';
+    const link = img.dataset.link;
+
+    console.log(`Iniciando recuperação de imagem para: ${term}`);
+
+    // 1. Tenta o Scraper de Elite (Busca no link da loja)
+    if (link && link !== '#' && !img.dataset.triedScraper) {
+        img.dataset.triedScraper = 'true';
+        fetch(`/api/scrape-image?url=${encodeURIComponent(link)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.image) {
+                    img.src = data.image;
+                    img.dataset.handlingError = ''; // Reset para permitir novos erros se o scraper falhar
+                } else {
+                    tryNextFallback(img, term);
+                }
+            })
+            .catch(() => tryNextFallback(img, term));
+    } else {
+        tryNextFallback(img, term);
+    }
+}
+
+function tryNextFallback(img, term) {
+    // 2. Tenta LoremFlickr com uma variante de busca
+    if (!img.dataset.triedSmart) {
+        img.dataset.triedSmart = 'true';
+        img.src = `https://loremflickr.com/800/800/${term},item`;
+        img.dataset.handlingError = '';
+        return;
+    }
+
+    // 3. Fallback Final: Imagem de Texto Estilizada (Nunca Falha)
+    if (!img.dataset.triedFinal) {
+        img.dataset.triedFinal = 'true';
+        const cleanTerm = decodeURIComponent(term).toUpperCase();
+        img.src = `https://placehold.co/800x800/1a1a1a/e50914?text=${cleanTerm}`;
+        img.dataset.handlingError = '';
+    }
+}
 
 function copyCoupon(id) {
     const couponElement = document.getElementById(id);
@@ -190,42 +148,4 @@ function copyCoupon(id) {
             btn.style.color = '';
         }, 2000);
     });
-}
-
-// Função de Fallback Inteligente para Imagens
-async function handleImageError(img, term) {
-    // 1. Tenta buscar a imagem real no link da loja (Scraper)
-    const affiliateLink = img.dataset.link;
-    if (affiliateLink && affiliateLink !== '#' && !img.dataset.triedScraper) {
-        img.dataset.triedScraper = 'true';
-        console.log(`Buscando imagem oficial no link: ${affiliateLink}`);
-        try {
-            const res = await fetch(`/api/scrape-image?url=${encodeURIComponent(affiliateLink)}`);
-            const data = await res.json();
-            if (data.image) {
-                img.src = data.image;
-                return;
-            }
-        } catch (e) { console.warn('Erro ao raspar imagem:', e); }
-    }
-
-    // 2. Se o scraper falhar ou não houver link, tenta imagem inteligente (LoremFlickr)
-    if (!img.dataset.triedSmartFallback) {
-        img.dataset.triedSmartFallback = 'true';
-        console.log(`Fallback 1: Buscando imagem real para: ${term}`);
-        img.src = `https://loremflickr.com/800/800/${term}`;
-        return;
-    }
-    
-    // Se a imagem real falhar, usamos um fallback de texto dinâmico (Placehold.co)
-    if (!img.dataset.triedTextFallback) {
-        img.dataset.triedTextFallback = 'true';
-        console.log(`Fallback 2: Gerando imagem de texto para: ${term}`);
-        const cleanTerm = decodeURIComponent(term).replace(/[^\w\s]/gi, '');
-        img.src = `https://placehold.co/800x800/1a1a1a/e50914?text=${encodeURIComponent(cleanTerm)}`;
-        return;
-    }
-
-    // Se tudo falhar, removemos a imagem para não quebrar o layout
-    img.style.display = 'none';
 }

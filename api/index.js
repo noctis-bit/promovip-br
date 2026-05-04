@@ -21,28 +21,27 @@ function getSupabase() {
     return createClient(url, key);
 }
 
-// Extração de imagem sem dependência de workers (estável para Vercel)
-async function extractImage(pdfDoc, pageIndex) {
+// Varredura Global de Imagens
+async function scanAllImages(pdfDoc) {
+    const images = [];
     try {
-        const page = pdfDoc.getPage(pageIndex);
-        const { xObjectNames } = page.node;
-        if (!xObjectNames) return null;
-
-        for (const name of xObjectNames()) {
-            const xObject = page.node.resources().lookup(name);
-            if (xObject && xObject.get('Subtype')?.toString() === '/Image') {
-                const bytes = xObject.contents;
-                if (!bytes || bytes.length < 5000) continue; // Pula ícones/logo
-                
-                let contentType = 'image/jpeg';
-                const filter = xObject.get('Filter')?.toString();
-                if (filter?.includes('Flate')) contentType = 'image/png';
-                
-                return { bytes, contentType };
+        const objects = pdfDoc.context.enumerateIndirectObjects();
+        for (const [ref, obj] of objects) {
+            if (obj.constructor.name === 'PDFStream') {
+                const dict = obj.dict;
+                if (dict.get('Subtype')?.toString() === '/Image') {
+                    const bytes = obj.contents;
+                    if (bytes && bytes.length > 5000) {
+                        let contentType = 'image/jpeg';
+                        const filter = dict.get('Filter')?.toString();
+                        if (filter?.includes('Flate')) contentType = 'image/png';
+                        images.push({ bytes, contentType, ref: ref.toString() });
+                    }
+                }
             }
         }
-    } catch (e) { console.error('Erro img extraction:', e.message); }
-    return null;
+    } catch (e) { console.error('Erro varredura global:', e); }
+    return images;
 }
 
 app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
@@ -52,7 +51,6 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
         const supabase = getSupabase();
         const globalCoupon = req.body.coupon || "";
 
-        // Capturar texto de forma estável
         const pagesText = [];
         await pdf(dataBuffer, {
             pagerender: (pageData) => {
@@ -66,12 +64,15 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
 
         const pdfDoc = await PDFDocument.load(dataBuffer);
         const totalPages = pdfDoc.getPageCount();
+        const allImages = await scanAllImages(pdfDoc);
+        
+        console.log(`Encontradas ${allImages.length} imagens no arquivo total.`);
         const newPromos = [];
 
         for (let i = 0; i < totalPages; i++) {
             const pageText = pagesText[i] || "";
-            
             let price = "Consulte", link = "#", name = "";
+
             const priceMatch = pageText.match(/PRE[ÇC]O:?\s*(R\$\s?[\d.,]+|\d+[\d.,]*)/i);
             if (priceMatch) price = priceMatch[1];
             
@@ -82,13 +83,18 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             if (name.length > 100) name = name.substring(0, 97) + '...';
 
             let productImage = "assets/placeholder.png";
-            const imgData = await extractImage(pdfDoc, i);
-            if (imgData) {
-                try {
-                    const fileName = `img_${Date.now()}_${i}.jpg`;
-                    const { error } = await supabase.storage.from('promos').upload(fileName, imgData.bytes, { contentType: imgData.contentType });
-                    if (!error) productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
-                } catch (e) { console.error('Storage error:', e.message); }
+            
+            // Pega a imagem correspondente à ordem da página (assumindo 1 foto por página)
+            if (allImages[i]) {
+                const imgData = allImages[i];
+                const fileName = `img_${Date.now()}_${i}.jpg`;
+                const { error: uploadError } = await supabase.storage
+                    .from('promos')
+                    .upload(fileName, imgData.bytes, { contentType: imgData.contentType });
+                
+                if (!uploadError) {
+                    productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
+                }
             }
 
             newPromos.push({

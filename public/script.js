@@ -42,10 +42,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Geramos um termo de busca limpo para a imagem de fallback
         const searchTerm = encodeURIComponent(promo.name.split(' ').slice(0, 3).join(' '));
         
+        // Se não houver imagem, já usamos o fallback de cara
+        const imageSrc = (promo.image && promo.image !== 'null' && promo.image !== 'undefined') 
+                         ? promo.image 
+                         : `https://loremflickr.com/800/800/${searchTerm}`;
+
         article.innerHTML = `
             <div class="discount-badge">${promo.discount}</div>
             <div class="card-image">
-                <img src="${promo.image}" 
+                <img src="${imageSrc}" 
                      alt="${promo.name}" 
                      onerror="handleImageError(this, '${searchTerm}')">
             </div>

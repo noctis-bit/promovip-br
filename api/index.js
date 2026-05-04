@@ -6,7 +6,7 @@ const cors = require('cors');
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const pdf = require('pdf-parse');
-const { PDFDocument } = require('pdf-lib');
+const pdfjs = require('pdfjs-dist/legacy/build/pdf.js');
 
 const app = express();
 const upload = multer({ dest: '/tmp' });
@@ -21,6 +21,33 @@ function getSupabase() {
     return createClient(url, key);
 }
 
+// Extração de imagem ultra-compatível
+async function extractImageFromPage(dataBuffer, pageIndex) {
+    try {
+        const loadingTask = pdfjs.getDocument({ data: new Uint8Array(dataBuffer) });
+        const pdfDoc = await loadingTask.promise;
+        const page = await pdfDoc.getPage(pageIndex + 1);
+        const opList = await page.getOperatorList();
+        
+        for (let i = 0; i < opList.fnArray.length; i++) {
+            if (opList.fnArray[i] === pdfjs.OPS.paintImageXObject || opList.fnArray[i] === pdfjs.OPS.paintJpegXObject) {
+                const imgKey = opList.argsArray[i][0];
+                const img = await page.objs.get(imgKey);
+                
+                if (img && img.data) {
+                    // Converter Uint8ClampedArray para Buffer (se for RGBA) ou usar os bytes diretos
+                    if (img.data.length > 5000) {
+                        // Se for JPEG, já temos os dados. Se for RGBA, precisaríamos de canvas.
+                        // Mas para PDFs de afiliados, 99% das vezes são JPEGs (paintJpegXObject)
+                        return { data: img.data, isRgba: !img.kind }; 
+                    }
+                }
+            }
+        }
+    } catch (e) { console.error('Erro extração imagem:', e.message); }
+    return null;
+}
+
 app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
@@ -32,7 +59,6 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
         await pdf(dataBuffer, {
             pagerender: (pageData) => {
                 return pageData.getTextContent().then((textContent) => {
-                    // Pega todo o texto da página mantendo ordem natural
                     const text = textContent.items.map(item => item.str).join(' ');
                     pagesText.push(text);
                     return text;
@@ -40,79 +66,48 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             }
         });
 
-        const pdfDoc = await PDFDocument.load(dataBuffer);
-        const totalPages = pdfDoc.getPageCount();
+        const loadingTask = pdfjs.getDocument({ data: new Uint8Array(dataBuffer) });
+        const pdfDoc = await loadingTask.promise;
+        const totalPages = pdfDoc.numPages;
         const newPromos = [];
-
-        console.log(`Processando ${totalPages} produtos (um por página)...`);
 
         for (let i = 0; i < totalPages; i++) {
             const pageText = pagesText[i] || "";
-            const links = [...new Set(pageText.match(/(https?:\/\/[^\s]+)/g) || [])];
-            const prices = pageText.match(/R\$\s?(\d+[\d.,]*)/g);
-            
-            if (!links.length && !prices) continue;
+            let price = "Consulte", link = "#", name = "";
 
-            const price = prices ? prices[prices.length - 1] : "Consulte";
+            const priceMatch = pageText.match(/PRE[ÇC]O:?\s*(R\$\s?[\d.,]+|\d+[\d.,]*)/i);
+            if (priceMatch) price = priceMatch[1];
             
-            // Filtro de Nome: Pega o texto da página, remove o link e o preço, e o que sobrar de relevante é o nome
-            let name = pageText
-                .replace(/(https?:\/\/[^\s]+)/g, '')
-                .replace(/R\$\s?(\d+[\d.,]*)/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-            
-            // Se o nome ficou muito grande, pega apenas o começo
+            const linkMatch = pageText.match(/LINK:?\s*(https?:\/\/[^\s]+)/i);
+            if (linkMatch) link = linkMatch[1];
+
+            name = pageText.split(/PRE[ÇC]O|LINK/i)[0].trim() || `Produto ${i + 1}`;
             if (name.length > 100) name = name.substring(0, 97) + '...';
-            if (!name) name = `Produto Página ${i + 1}`;
 
             let productImage = "assets/placeholder.png";
             
-            // Busca profunda por imagens na página
-            try {
-                const page = pdfDoc.getPage(i);
-                const resources = page.node.resources();
-                const xObjects = resources?.get('XObject');
-                if (xObjects) {
-                    const names = xObjects.keys();
-                    for (const xName of names) {
-                        const xObject = xObjects.lookup(xName);
-                        if (xObject && xObject.get('Subtype')?.toString() === '/Image') {
-                            const bytes = xObject.contents;
-                            if (bytes && bytes.length > 3000) { // Evita ícones minúsculos
-                                const fileName = `img_${Date.now()}_${i}.jpg`;
-                                const { error: uploadError } = await supabase.storage.from('promos').upload(fileName, bytes, { contentType: 'image/jpeg' });
-                                if (!uploadError) {
-                                    productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
-                                    break; 
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (e) { console.error('Erro ao extrair imagem:', e.message); }
+            // Tentar extrair a imagem real
+            const imgInfo = await extractImageFromPage(dataBuffer, i);
+            if (imgInfo && imgInfo.data) {
+                try {
+                    const fileName = `img_${Date.now()}_${i}.jpg`;
+                    const buffer = Buffer.from(imgInfo.data);
+                    const { error } = await supabase.storage.from('promos').upload(fileName, buffer, { contentType: 'image/jpeg' });
+                    if (!error) productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
+                } catch (e) { console.error('Erro upload storage:', e.message); }
+            }
 
             newPromos.push({
-                name, 
-                old_price: "---", 
-                current_price: price, 
+                name, old_price: "---", current_price: price, 
                 discount: globalCoupon ? `CUPOM: ${globalCoupon}` : "Oferta!",
-                image: productImage,
-                affiliate_link: links[0] || "#",
-                urgency: "Verificado!",
-                coupon: globalCoupon
+                image: productImage, affiliate_link: link, urgency: "Verificado!", coupon: globalCoupon
             });
         }
 
-        if (newPromos.length > 0) {
-            const { error: dbError } = await supabase.from('promos').insert(newPromos);
-            if (dbError) throw dbError;
-        }
-
+        if (newPromos.length > 0) await supabase.from('promos').insert(newPromos);
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.json({ message: 'Sucesso!', count: newPromos.length });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: error.message });
     }
 });

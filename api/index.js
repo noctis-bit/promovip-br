@@ -21,26 +21,33 @@ function getSupabase() {
     return createClient(url, key);
 }
 
-// Varredura Global de Imagens
-async function scanAllImages(pdfDoc) {
+// Extração de imagem por cabeçalhos binários (Técnica Ninja)
+async function extractNinjaImages(pdfDoc) {
     const images = [];
     try {
         const objects = pdfDoc.context.enumerateIndirectObjects();
         for (const [ref, obj] of objects) {
-            if (obj.constructor.name === 'PDFStream') {
-                const dict = obj.dict;
-                if (dict.get('Subtype')?.toString() === '/Image') {
+            // Verificar se o objeto tem um dicionário e um fluxo de conteúdo
+            if (obj && obj.contents) {
+                const dict = obj.dict || (obj.get ? obj : null);
+                if (!dict) continue;
+
+                const subtype = dict.get ? dict.get('Subtype')?.toString() : null;
+                const filter = dict.get ? dict.get('Filter')?.toString() : null;
+                
+                // Se for explicitamente uma imagem OU se o conteúdo parecer uma imagem
+                if (subtype === '/Image' || (filter === '/DCTDecode')) {
                     const bytes = obj.contents;
                     if (bytes && bytes.length > 5000) {
-                        let contentType = 'image/jpeg';
-                        const filter = dict.get('Filter')?.toString();
-                        if (filter?.includes('Flate')) contentType = 'image/png';
-                        images.push({ bytes, contentType, ref: ref.toString() });
+                        images.push({ 
+                            bytes, 
+                            contentType: filter === '/DCTDecode' ? 'image/jpeg' : 'image/png' 
+                        });
                     }
                 }
             }
         }
-    } catch (e) { console.error('Erro varredura global:', e); }
+    } catch (e) { console.error('Erro ninja:', e); }
     return images;
 }
 
@@ -64,9 +71,9 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
 
         const pdfDoc = await PDFDocument.load(dataBuffer);
         const totalPages = pdfDoc.getPageCount();
-        const allImages = await scanAllImages(pdfDoc);
+        const allImages = await extractNinjaImages(pdfDoc);
         
-        console.log(`Encontradas ${allImages.length} imagens no arquivo total.`);
+        console.log(`Páginas: ${totalPages}, Imagens Ninjas: ${allImages.length}`);
         const newPromos = [];
 
         for (let i = 0; i < totalPages; i++) {
@@ -84,17 +91,12 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
 
             let productImage = "assets/placeholder.png";
             
-            // Pega a imagem correspondente à ordem da página (assumindo 1 foto por página)
+            // Tenta pegar a imagem da lista ninja
             if (allImages[i]) {
-                const imgData = allImages[i];
-                const fileName = `img_${Date.now()}_${i}.jpg`;
-                const { error: uploadError } = await supabase.storage
-                    .from('promos')
-                    .upload(fileName, imgData.bytes, { contentType: imgData.contentType });
-                
-                if (!uploadError) {
-                    productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
-                }
+                const img = allImages[i];
+                const fileName = `ninja_${Date.now()}_${i}.jpg`;
+                const { error } = await supabase.storage.from('promos').upload(fileName, img.bytes, { contentType: img.contentType });
+                if (!error) productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
             }
 
             newPromos.push({

@@ -60,213 +60,251 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script>
         // Inicializar tema antes de renderizar para evitar flash branco
         (function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
         })();
     </script>
 </head>
 <body>
-    <button class="theme-toggle" id="themeToggle" title="Alternar Tema">
-        <span class="icon">🌓</span>
-    </button>
 
-    <!-- HERO SECTION -->
+    <!-- TICKER -->
+    <div class="ticker-wrap">
+        <div class="ticker-inner">
+            <div class="ticker-item"><span>⚡</span>FRETE GRÁTIS AMAZON ATÉ MEIA NOITE</div>
+            <div class="ticker-item"><span>🔥</span>SAMSUNG 40% OFF — SÓ HOJE</div>
+            <div class="ticker-item"><span>⚡</span>NIKE: TÊNIS COM CUPOM EXCLUSIVO VIP</div>
+            <div class="ticker-item"><span>💥</span>IFOOD — PRIMEIRO PEDIDO COM 50% OFF</div>
+            <div class="ticker-item"><span>⚡</span>SHOPEE FLASH SALE — ACABA EM 2H</div>
+            <div class="ticker-item"><span>🔥</span>MAGALU SMARTPHONE ATÉ 35% DESCONTO</div>
+            <!-- Duplicados para loop infinito -->
+            <div class="ticker-item"><span>⚡</span>FRETE GRÁTIS AMAZON ATÉ MEIA NOITE</div>
+            <div class="ticker-item"><span>🔥</span>SAMSUNG 40% OFF — SÓ HOJE</div>
+            <div class="ticker-item"><span>⚡</span>NIKE: TÊNIS COM CUPOM EXCLUSIVO VIP</div>
+            <div class="ticker-item"><span>💥</span>IFOOD — PRIMEIRO PEDIDO COM 50% OFF</div>
+            <div class="ticker-item"><span>⚡</span>SHOPEE FLASH SALE — ACABA EM 2H</div>
+            <div class="ticker-item"><span>🔥</span>MAGALU SMARTPHONE ATÉ 35% DESCONTO</div>
+        </div>
+    </div>
+
+    <!-- BOTÃO TEMA (OPCIONAL) -->
+    <button class="theme-toggle" id="themeToggle" title="Alternar Tema">🌓</button>
+
+    <!-- NAV -->
+    <nav>
+        <a href="#" class="logo">
+            <svg class="logo-bolt" viewBox="0 0 24 24"><path d="M13 2L4.09 12.41A1 1 0 0 0 4.86 14H11v8l8.91-10.41A1 1 0 0 0 19.14 10H13V2z"/></svg>
+            <div>
+                <div class="logo-text">PromoVIP<span>BR</span></div>
+            </div>
+            <div class="logo-badge">VIP</div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="#ofertas">Promoções</a></li>
+            <li><a href="#cupons">Cupons</a></li>
+            <li><a href="#categorias">Categorias</a></li>
+            <li><a href="#como-funciona">Como Funciona</a></li>
+        </ul>
+
+        <a href="#vip" class="btn-vip">⚡ Ser VIP Grátis</a>
+    </nav>
+
+    <!-- HERO -->
     <header class="hero">
-        <div class="hero-content">
-            <h1 class="logo">PromoVIPBR <span class="fire">🔥</span></h1>
-            <p class="subtitle">Só promoções reais e verificadas todos os dias.</p>
-            <a href="#ofertas" class="btn-primary">Ver Ofertas Agora</a>
-            <div class="urgency-badge">
-                <span class="dot"></span> Atualizado diariamente
+        <svg class="hero-bolt-bg" viewBox="0 0 24 24"><path d="M13 2L4.09 12.41A1 1 0 0 0 4.86 14H11v8l8.91-10.41A1 1 0 0 0 19.14 10H13V2z"/></svg>
+
+        <div class="hero-badge fade-up">
+            <div class="hero-badge-dot"></div>
+            Ofertas atualizadas em tempo real
+        </div>
+
+        <h1 class="fade-up delay-1">
+            Melhores<br>
+            <span class="highlight">Promos</span><br>
+            Do Brasil
+        </h1>
+
+        <p class="hero-sub fade-up delay-2">
+            Cupons exclusivos, ofertas relâmpago e as melhores promoções das maiores lojas.
+        </p>
+
+        <div class="hero-search fade-up delay-3">
+            <input type="text" id="searchInput" placeholder="Buscar produto, loja ou categoria...">
+            <button id="searchBtn">Buscar</button>
+        </div>
+
+        <div class="hero-stats fade-up delay-4">
+            <div class="hero-stat">
+                <div class="hero-stat-num">800<span>+</span></div>
+                <div class="hero-stat-label">Promos Ativas</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">300<span>+</span></div>
+                <div class="hero-stat-label">Lojas Parceiras</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">R$1M<span>+</span></div>
+                <div class="hero-stat-label">Economizados</div>
             </div>
         </div>
     </header>
 
     <main>
         <!-- SEÇÃO DE OFERTAS -->
-        <section id="ofertas" class="offers-section">
-            <div class="container">
-                <div class="offers-grid">
-                    
-                    <!-- Produto 1 -->
-                    <article class="product-card">
-                        <div class="discount-badge">-35%</div>
-                        <div class="card-image">
-                            <img src="assets/smartphone_promo_1777905340702.png" alt="Smartphone Moderno">
-                        </div>
-                        <div class="card-content">
-                            <h2 class="product-name">Smartphone Moderno Pro Max</h2>
-                            <div class="price-container">
-                                <span class="old-price">R$ 4.599,00</span>
-                                <div class="current-price-wrapper">
-                                    <span class="currency">R$</span>
-                                    <span class="current-price">2.989,00</span>
-                                </div>
-                                <div class="urgency-text pulse-text">⚡ Baixou de preço!</div>
-                            </div>
-                            <a href="#" class="btn-offer" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
-                        </div>
-                    </article>
-
-                    <!-- Produto 2 -->
-                    <article class="product-card">
-                        <div class="discount-badge">-40%</div>
-                        <div class="card-image">
-                            <img src="assets/smartwatch_promo_1777905354135.png" alt="Smartwatch Esportivo">
-                        </div>
-                        <div class="card-content">
-                            <h2 class="product-name">Smartwatch Elite Serie 8</h2>
-                            <div class="price-container">
-                                <span class="old-price">R$ 1.299,00</span>
-                                <div class="current-price-wrapper">
-                                    <span class="currency">R$</span>
-                                    <span class="current-price">779,00</span>
-                                </div>
-                                <div class="urgency-text pulse-text">⚡ Estoque acabando!</div>
-                            </div>
-                            <a href="#" class="btn-offer" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
-                        </div>
-                    </article>
-
-                    <!-- Produto 3 -->
-                    <article class="product-card">
-                        <div class="discount-badge">-55%</div>
-                        <div class="card-image">
-                            <img src="assets/earbuds_promo_1777905368510.png" alt="Fone sem fio Premium">
-                        </div>
-                        <div class="card-content">
-                            <h2 class="product-name">Fone de Ouvido Aura TWS</h2>
-                            <div class="price-container">
-                                <span class="old-price">R$ 599,00</span>
-                                <div class="current-price-wrapper">
-                                    <span class="currency">R$</span>
-                                    <span class="current-price">269,00</span>
-                                </div>
-                                <div class="urgency-text pulse-text">⚡ Oferta relâmpago!</div>
-                            </div>
-                            <a href="#" class="btn-offer" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
-                        </div>
-                    </article>
-
-                    <!-- Produto 4 -->
-                    <article class="product-card">
-                        <div class="discount-badge">-30%</div>
-                        <div class="card-image">
-                            <img src="assets/airfryer_promo_1777905385225.png" alt="Air Fryer Digital">
-                        </div>
-                        <div class="card-content">
-                            <h2 class="product-name">Fritadeira Sem Óleo Aero Cook Digital</h2>
-                            <div class="price-container">
-                                <span class="old-price">R$ 850,00</span>
-                                <div class="current-price-wrapper">
-                                    <span class="currency">R$</span>
-                                    <span class="current-price">595,00</span>
-                                </div>
-                                <div class="urgency-text pulse-text">⚡ Últimas unidades!</div>
-                            </div>
-                            <a href="#" class="btn-offer" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
-                        </div>
-                    </article>
-
+        <section id="ofertas">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">⚡ Promos em <em>Destaque</em></h2>
+                    <p class="section-sub">Atualizadas a cada hora — não perca!</p>
                 </div>
+                <a href="#" class="view-all">Ver Todas</a>
+            </div>
+
+            <div class="offers-grid">
+                <!-- Injetado via JS -->
+                <div class="loading-placeholder">Carregando promoções...</div>
+            </div>
+        </section>
+
+        <!-- CATEGORIAS -->
+        <section id="categorias" class="categories-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Explorar por <em>Categoria</em></h2>
+                    <p class="section-sub">Encontre ofertas do que você precisa</p>
+                </div>
+            </div>
+            <div class="cat-grid">
+                <a href="#" class="cat-card"><div class="cat-icon">📱</div><div class="cat-name">Tecnologia</div></a>
+                <a href="#" class="cat-card"><div class="cat-icon">👗</div><div class="cat-name">Moda</div></a>
+                <a href="#" class="cat-card"><div class="cat-icon">🏠</div><div class="cat-name">Casa</div></a>
+                <a href="#" class="cat-card"><div class="cat-icon">💄</div><div class="cat-name">Beleza</div></a>
+                <a href="#" class="cat-card"><div class="cat-icon">🍕</div><div class="cat-name">Alimentação</div></a>
+                <a href="#" class="cat-card"><div class="cat-icon">🎮</div><div class="cat-name">Games</div></a>
             </div>
         </section>
 
         <!-- SEÇÃO DE CUPONS -->
-        <section class="coupons-section">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Cupons de Desconto 🏷️</h2>
-                    <p>Use os códigos abaixo na finalização da compra e garanta ainda mais desconto!</p>
+        <section id="cupons">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">🎟️ Cupons <em>Exclusivos</em></h2>
+                    <p class="section-sub">Copie o código e aplique no checkout</p>
                 </div>
-                <div class="coupons-grid">
-                    <!-- Cupom 1 -->
-                    <div class="coupon-card">
-                        <div class="coupon-store">Mercado Livre</div>
-                        <div class="coupon-value">R$ 50 OFF</div>
-                        <p class="coupon-desc">Em compras acima de R$ 200</p>
-                        <div class="coupon-code-box">
-                            <span class="coupon-code" id="cupom1">MEU50OFF</span>
-                            <button class="btn-copy" onclick="copyCoupon('cupom1')">Copiar</button>
-                        </div>
-                    </div>
-                    <!-- Cupom 2 -->
-                    <div class="coupon-card">
-                        <div class="coupon-store">Shopee</div>
-                        <div class="coupon-value">15% OFF</div>
-                        <p class="coupon-desc">Cupom válido para primeira compra</p>
-                        <div class="coupon-code-box">
-                            <span class="coupon-code" id="cupom2">SHOPEE15</span>
-                            <button class="btn-copy" onclick="copyCoupon('cupom2')">Copiar</button>
-                        </div>
-                    </div>
+                <a href="#" class="view-all">Ver Todos</a>
+            </div>
+            <div class="cupons-grid">
+                <!-- Injetado via JS -->
+            </div>
+        </section>
+
+        <!-- COMO FUNCIONA -->
+        <section id="como-funciona" class="how-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Como <em>Funciona</em></h2>
+                    <p class="section-sub">Simples, rápido e gratuito</p>
+                </div>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-num">01</div>
+                    <div class="step-icon">🔍</div>
+                    <div class="step-title">Descubra</div>
+                    <p class="step-text">Navegue pelas melhores promoções e cupons atualizados em tempo real.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">02</div>
+                    <div class="step-icon">🎟️</div>
+                    <div class="step-title">Copie</div>
+                    <p class="step-text">Copie o código exclusivo com um clique ou acesse a oferta diretamente.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">03</div>
+                    <div class="step-icon">💰</div>
+                    <div class="step-title">Economize</div>
+                    <p class="step-text">Aplique o cupom no checkout e economize na hora.</p>
                 </div>
             </div>
         </section>
 
-        <!-- SEÇÃO DE CONFIANÇA -->
-        <section class="trust-section">
-            <div class="container trust-grid">
-                <div class="trust-item">
-                    <div class="trust-icon">🛡️</div>
-                    <h3>Só promoções verificadas</h3>
-                    <p>Analisamos cada oferta antes de postar.</p>
-                </div>
-                <div class="trust-item">
-                    <div class="trust-icon">✅</div>
-                    <h3>Sem fake, sem golpe</h3>
-                    <p>Links oficiais para lojas seguras e confiáveis.</p>
-                </div>
-                <div class="trust-item">
-                    <div class="trust-icon">⏳</div>
-                    <h3>Ofertas limitadas</h3>
-                    <p>As ofertas podem acabar a qualquer momento.</p>
-                </div>
+        <!-- VIP BANNER -->
+        <section id="vip" class="vip-section">
+            <div class="vip-bolt">⚡</div>
+            <h2 class="vip-title">Acesso <span>VIP</span><br>Gratuito</h2>
+            <p class="vip-text">Receba as melhores promos direto no seu WhatsApp ou Telegram antes de todo mundo.</p>
+            <div class="vip-benefits">
+                <div class="vip-benefit"><span class="vip-benefit-icon">✓</span> Alertas em tempo real</div>
+                <div class="vip-benefit"><span class="vip-benefit-icon">✓</span> Cupons exclusivos VIP</div>
+                <div class="vip-benefit"><span class="vip-benefit-icon">✓</span> 100% Gratuito</div>
             </div>
+            <a href="#" class="btn-vip-big">⚡ Entrar no Grupo VIP</a>
         </section>
 
-        <!-- GRUPO WHATSAPP -->
-        <section class="whatsapp-section">
-            <div class="container whatsapp-container">
-                <div class="whatsapp-content">
-                    <h2>Não perca as melhores promoções! 🏃‍♂️💨</h2>
-                    <p>Entre no nosso grupo VIP do WhatsApp e receba ofertas relâmpago antes de todo mundo.</p>
+        <!-- NEWSLETTER SECTION -->
+        <section class="newsletter-section">
+            <div class="newsletter-box">
+                <div class="newsletter-text">
+                    <h3>📬 Fique por Dentro</h3>
+                    <p>Receba as melhores promos no seu e-mail diariamente.</p>
                 </div>
-                <a href="#" class="btn-whatsapp">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M12.01 2.002c-5.522 0-10.002 4.478-10.002 10.002 0 1.954.55 3.844 1.597 5.46L2 22l4.654-1.554a9.96 9.96 0 0 0 5.356 1.536h.004c5.52 0 10-4.48 10-10S17.53 2.002 12.01 2.002zM12.01 20.31a8.31 8.31 0 0 1-4.237-1.157l-.304-.18-3.146 1.05 1.066-3.072-.198-.316A8.3 8.3 0 0 1 3.67 12c0-4.596 3.743-8.337 8.34-8.337 2.228 0 4.322.868 5.897 2.443A8.32 8.32 0 0 1 20.35 12c0 4.596-3.742 8.31-8.34 8.31zm4.577-6.242c-.25-.126-1.488-.734-1.718-.818-.23-.083-.398-.125-.565.126-.168.25-.65.818-.797.985-.148.167-.297.188-.548.062-.25-.125-1.062-.392-2.02-1.246-.745-.665-1.248-1.487-1.396-1.737-.148-.25-.016-.385.11-.51.112-.11.25-.292.375-.438.125-.147.167-.25.25-.417.083-.167.042-.312-.02-.438-.063-.125-.565-1.363-.775-1.867-.204-.492-.41-.425-.565-.433-.146-.007-.313-.008-.48-.008s-.438.063-.668.313c-.23.25-.877.857-.877 2.09s.898 2.42 1.024 2.587c.125.167 1.763 2.69 4.27 3.774 1.543.666 2.146.71 2.92.597.854-.125 2.607-1.065 2.974-2.093.366-1.028.366-1.908.257-2.092-.108-.184-.4-.292-.65-.418z"/></svg>
-                    Entrar no Grupo VIP
-                </a>
+                <form class="newsletter-form" id="newsletterFormSection">
+                    <input type="email" placeholder="seu@email.com" required>
+                    <button type="submit">Cadastrar</button>
+                </form>
             </div>
         </section>
     </main>
 
     <!-- RODAPÉ -->
     <footer class="footer">
-        <div class="container">
-            <div class="footer-logo">PromoVIPBR</div>
-            <p class="affiliate-notice">Aviso: Este site participa de programas de afiliados. Podemos receber uma comissão por compras realizadas através de nossos links, sem custo adicional para você.</p>
-            <p class="rights">&copy; <span id="year"></span> PromoVIPBR. Todos os direitos reservados.</p>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <div class="logo">
+                    <svg class="logo-bolt" viewBox="0 0 24 24"><path d="M13 2L4.09 12.41A1 1 0 0 0 4.86 14H11v8l8.91-10.41A1 1 0 0 0 19.14 10H13V2z"/></svg>
+                    <div class="logo-text">PromoVIP<span>BR</span></div>
+                </div>
+                <p class="footer-brand-desc">As melhores promoções e cupons do Brasil, atualizados em tempo real. Economize em cada compra.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="#ofertas">Ofertas</a></li>
+                    <li><a href="#cupons">Cupons</a></li>
+                    <li><a href="#categorias">Categorias</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacidade</a></li>
+                    <li><a href="#">Termos</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p class="footer-copy">© <span id="year"></span> <strong>PromoVIPBR</strong> — Todos os direitos reservados.</p>
+            <p class="footer-copy">Este site pode receber comissões por compras através de links afiliados.</p>
         </div>
     </footer>
 
-    <script src="script.js"></script>
-
-    <!-- WIDGET NEWSLETTER / LOGIN MINIMALISTA -->
+    <!-- WIDGET NEWSLETTER -->
     <div class="newsletter-widget" id="newsletterWidget">
         <div class="newsletter-header">
             <h4>Receba Ofertas VIP</h4>
             <button class="close-btn" id="closeNewsletter">&times;</button>
         </div>
-        <p class="newsletter-text">Cadastre seu e-mail para não perder nenhuma promo secreta.</p>
-        <form class="newsletter-form" id="newsletterForm">
+        <form class="newsletter-form-stacked" id="newsletterForm">
             <input type="email" placeholder="Seu melhor e-mail" required>
-            <button type="submit" class="btn-primary btn-small">Cadastrar</button>
+            <button type="submit" class="promo-btn featured">Cadastrar</button>
         </form>
     </div>
+
+    <script src="script.js"></script>
 </body>
 </html>

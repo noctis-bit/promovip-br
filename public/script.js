@@ -45,16 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <img src="${promo.image}" alt="${promo.name}" onerror="this.src='assets/placeholder.png'">
             </div>
             <div class="card-content">
+                <div class="promo-store">${promo.store || 'Loja Parceira'}</div>
                 <h2 class="product-name">${promo.name}</h2>
                 <div class="price-container">
-                    <span class="old-price">${promo.oldPrice}</span>
-                    <div class="current-price-wrapper">
-                        <span class="currency">R$</span>
-                        <span class="current-price">${promo.currentPrice.replace('R$', '').trim()}</span>
+                    <div class="price-row">
+                        <span class="current-price">R$ ${promo.currentPrice.replace('R$', '').trim()}</span>
+                        <span class="old-price">${promo.oldPrice}</span>
                     </div>
-                    <div class="urgency-text pulse-text">⚡ ${promo.urgency}</div>
+                    <div class="urgency-text">⚡ ${promo.urgency}</div>
                 </div>
-                <a href="${promo.affiliateLink}" class="btn-offer" target="_blank" rel="noopener noreferrer">Ver Oferta</a>
+                <a href="${promo.affiliateLink}" class="promo-btn featured" target="_blank" rel="noopener noreferrer">Pegar Oferta</a>
             </div>
         `;
         return article;
@@ -76,13 +76,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const card = document.createElement('div');
                     card.className = 'coupon-card';
                     card.innerHTML = `
-                        <div class="coupon-store">${cp.store}</div>
-                        <div class="coupon-value">${cp.value}</div>
-                        <p class="coupon-desc">${cp.desc || ''}</p>
-                        <div class="coupon-code-box">
-                            <span class="coupon-code" id="${id}">${cp.code}</span>
-                            <button class="btn-copy" onclick="copyCoupon('${id}')">Copiar</button>
+                        <div class="coupon-logo">🎟️</div>
+                        <div class="coupon-info">
+                            <div class="coupon-store">${cp.store}</div>
+                            <div class="coupon-desc">${cp.desc || 'Cupom exclusivo'}</div>
+                            <div class="coupon-code-box">
+                                <span class="coupon-code" id="${id}">${cp.code}</span>
+                                <button class="btn-copy" onclick="copyCoupon('${id}')">Copiar</button>
+                            </div>
                         </div>
+                        <div class="coupon-value">${cp.value}</div>
                     `;
                     couponGrid.appendChild(card);
                 });
@@ -142,8 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(() => {
         if (newsletterWidget) {
-            newsletterWidget.style.transform = 'translateY(0)';
-            newsletterWidget.style.opacity = '1';
+            newsletterWidget.classList.add('active');
         }
     }, 5000);
 

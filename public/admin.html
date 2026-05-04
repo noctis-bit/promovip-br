@@ -157,6 +157,8 @@
             margin-right: 5px;
         }
     </style>
+    <!-- SUPABASE SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -306,6 +308,17 @@
             finally { spinner.style.display = 'none'; }
         });
 
+        // --- SUPABASE CLIENT-SIDE ---
+        let supabaseClient = null;
+        async function initSupabase() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                supabaseClient = supabase.createClient(config.url, config.key);
+            } catch (e) { console.error('Erro ao iniciar Supabase:', e); }
+        }
+        initSupabase();
+
         // --- PRODUTOS ---
         async function loadProducts() {
             const list = document.getElementById('productList');
@@ -360,21 +373,53 @@
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('editId').value;
-            const formData = new FormData();
-            formData.append('name', document.getElementById('editName').value);
-            formData.append('current_price', document.getElementById('editPrice').value);
-            formData.append('affiliate_link', document.getElementById('editLink').value);
-            
-            const imgFile = document.getElementById('editImage').files[0];
-            if (imgFile) formData.append('image', imgFile);
+            const statusBtn = e.target.querySelector('button[type="submit"]');
+            statusBtn.textContent = 'Salvando...';
+            statusBtn.disabled = true;
 
-            await fetch(`/api/promos/${id}`, {
-                method: 'PUT',
-                body: formData
-            });
+            try {
+                let imageUrl = null;
+                const imgFile = document.getElementById('editImage').files[0];
+                
+                // Upload Direto para o Supabase (Bypassing Vercel Limit)
+                if (imgFile && supabaseClient) {
+                    const fileName = `direct_${Date.now()}_${imgFile.name}`;
+                    const { data, error: uploadError } = await supabaseClient.storage
+                        .from('promos')
+                        .upload(fileName, imgFile, { upsert: true });
+                    
+                    if (!uploadError) {
+                        const { data: urlData } = supabaseClient.storage.from('promos').getPublicUrl(fileName);
+                        imageUrl = urlData.publicUrl;
+                    } else {
+                        console.error('Erro no upload direto:', uploadError);
+                        alert('Erro ao subir imagem. Tente uma foto menor ou verifique a conexão.');
+                    }
+                }
 
-            closeEditModal();
-            loadProducts();
+                // Salva o resto no banco via API
+                const payload = {
+                    name: document.getElementById('editName').value,
+                    current_price: document.getElementById('editPrice').value,
+                    affiliate_link: document.getElementById('editLink').value
+                };
+                if (imageUrl) payload.image = imageUrl;
+
+                await fetch(`/api/promos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                closeEditModal();
+                loadProducts();
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao salvar alterações.');
+            } finally {
+                statusBtn.textContent = 'Salvar Alterações';
+                statusBtn.disabled = false;
+            }
         });
 
         // --- CUPONS ---

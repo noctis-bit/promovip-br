@@ -21,6 +21,14 @@ function getSupabase() {
     return createClient(url, key);
 }
 
+// Endpoint para o frontend pegar as chaves públicas com segurança
+app.get('/api/config', (req, res) => {
+    res.json({
+        url: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+        key: process.env.NEXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY
+    });
+});
+
 // Extração de imagem por cabeçalhos binários (Técnica Ninja)
 async function extractNinjaImages(pdfDoc) {
     const images = [];
@@ -101,37 +109,20 @@ app.get('/api/promos', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.put('/api/promos/:id', upload.single('image'), async (req, res) => {
+// Atualizar apenas texto via API (Imagem agora é direto no front)
+app.put('/api/promos/:id', async (req, res) => {
     try {
         const supabase = getSupabase();
         const { id } = req.params;
-        const { name, current_price, affiliate_link } = req.body;
+        const { name, current_price, affiliate_link, image } = req.body;
         
         let updateData = { name, current_price, affiliate_link };
-
-        if (req.file) {
-            const fileData = fs.readFileSync(req.file.path);
-            const fileName = `manual_${Date.now()}_${req.file.originalname}`;
-            
-            // Upload manual forçado
-            const { error: uploadError } = await supabase.storage
-                .from('promos')
-                .upload(fileName, fileData, { 
-                    contentType: req.file.mimetype,
-                    upsert: true 
-                });
-            
-            if (!uploadError) {
-                const { data } = supabase.storage.from('promos').getPublicUrl(fileName);
-                updateData.image = data.publicUrl;
-            }
-            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        }
+        if (image) updateData.image = image;
 
         const { error } = await supabase.from('promos').update(updateData).eq('id', id);
         if (error) return res.status(400).json({ error: error.message });
         
-        res.json({ message: 'OK', image: updateData.image });
+        res.json({ message: 'OK' });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 

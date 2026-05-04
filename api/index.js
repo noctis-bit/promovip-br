@@ -6,7 +6,7 @@ const cors = require('cors');
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const pdf = require('pdf-parse');
-const pdfjs = require('pdfjs-dist/legacy/build/pdf.js');
+const { PDFDocument } = require('pdf-lib');
 
 const app = express();
 const upload = multer({ dest: '/tmp' });
@@ -21,30 +21,27 @@ function getSupabase() {
     return createClient(url, key);
 }
 
-// Extração de imagem ultra-compatível
-async function extractImageFromPage(dataBuffer, pageIndex) {
+// Extração de imagem sem dependência de workers (estável para Vercel)
+async function extractImage(pdfDoc, pageIndex) {
     try {
-        const loadingTask = pdfjs.getDocument({ data: new Uint8Array(dataBuffer) });
-        const pdfDoc = await loadingTask.promise;
-        const page = await pdfDoc.getPage(pageIndex + 1);
-        const opList = await page.getOperatorList();
-        
-        for (let i = 0; i < opList.fnArray.length; i++) {
-            if (opList.fnArray[i] === pdfjs.OPS.paintImageXObject || opList.fnArray[i] === pdfjs.OPS.paintJpegXObject) {
-                const imgKey = opList.argsArray[i][0];
-                const img = await page.objs.get(imgKey);
+        const page = pdfDoc.getPage(pageIndex);
+        const { xObjectNames } = page.node;
+        if (!xObjectNames) return null;
+
+        for (const name of xObjectNames()) {
+            const xObject = page.node.resources().lookup(name);
+            if (xObject && xObject.get('Subtype')?.toString() === '/Image') {
+                const bytes = xObject.contents;
+                if (!bytes || bytes.length < 5000) continue; // Pula ícones/logo
                 
-                if (img && img.data) {
-                    // Converter Uint8ClampedArray para Buffer (se for RGBA) ou usar os bytes diretos
-                    if (img.data.length > 5000) {
-                        // Se for JPEG, já temos os dados. Se for RGBA, precisaríamos de canvas.
-                        // Mas para PDFs de afiliados, 99% das vezes são JPEGs (paintJpegXObject)
-                        return { data: img.data, isRgba: !img.kind }; 
-                    }
-                }
+                let contentType = 'image/jpeg';
+                const filter = xObject.get('Filter')?.toString();
+                if (filter?.includes('Flate')) contentType = 'image/png';
+                
+                return { bytes, contentType };
             }
         }
-    } catch (e) { console.error('Erro extração imagem:', e.message); }
+    } catch (e) { console.error('Erro img extraction:', e.message); }
     return null;
 }
 
@@ -55,6 +52,7 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
         const supabase = getSupabase();
         const globalCoupon = req.body.coupon || "";
 
+        // Capturar texto de forma estável
         const pagesText = [];
         await pdf(dataBuffer, {
             pagerender: (pageData) => {
@@ -66,15 +64,14 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             }
         });
 
-        const loadingTask = pdfjs.getDocument({ data: new Uint8Array(dataBuffer) });
-        const pdfDoc = await loadingTask.promise;
-        const totalPages = pdfDoc.numPages;
+        const pdfDoc = await PDFDocument.load(dataBuffer);
+        const totalPages = pdfDoc.getPageCount();
         const newPromos = [];
 
         for (let i = 0; i < totalPages; i++) {
             const pageText = pagesText[i] || "";
+            
             let price = "Consulte", link = "#", name = "";
-
             const priceMatch = pageText.match(/PRE[ÇC]O:?\s*(R\$\s?[\d.,]+|\d+[\d.,]*)/i);
             if (priceMatch) price = priceMatch[1];
             
@@ -85,16 +82,13 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             if (name.length > 100) name = name.substring(0, 97) + '...';
 
             let productImage = "assets/placeholder.png";
-            
-            // Tentar extrair a imagem real
-            const imgInfo = await extractImageFromPage(dataBuffer, i);
-            if (imgInfo && imgInfo.data) {
+            const imgData = await extractImage(pdfDoc, i);
+            if (imgData) {
                 try {
                     const fileName = `img_${Date.now()}_${i}.jpg`;
-                    const buffer = Buffer.from(imgInfo.data);
-                    const { error } = await supabase.storage.from('promos').upload(fileName, buffer, { contentType: 'image/jpeg' });
+                    const { error } = await supabase.storage.from('promos').upload(fileName, imgData.bytes, { contentType: imgData.contentType });
                     if (!error) productImage = supabase.storage.from('promos').getPublicUrl(fileName).data.publicUrl;
-                } catch (e) { console.error('Erro upload storage:', e.message); }
+                } catch (e) { console.error('Storage error:', e.message); }
             }
 
             newPromos.push({

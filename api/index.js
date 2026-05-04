@@ -81,7 +81,7 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             if (linkMatch) link = linkMatch[1];
             name = pageText.split(/PRE[ÇC]O|LINK/i)[0].trim() || `Produto ${i + 1}`;
             if (name.length > 100) name = name.substring(0, 97) + '...';
-            let productImage = "assets/placeholder.png";
+            let productImage = null;
             if (allImages[i]) {
                 const img = allImages[i];
                 const fileName = `ninja_${Date.now()}_${i}.jpg`;

@@ -42,8 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Geramos um termo de busca limpo para a imagem de fallback
         const searchTerm = encodeURIComponent(promo.name.split(' ').slice(0, 3).join(' '));
         
-        // Se não houver imagem, já usamos o fallback de cara
-        const imageSrc = (promo.image && promo.image !== 'null' && promo.image !== 'undefined') 
+        // Se não houver imagem ou for o placeholder antigo, já usamos o fallback de cara
+        const isPlaceholder = !promo.image || promo.image.includes('placeholder') || promo.image === 'null' || promo.image === 'undefined';
+        const imageSrc = !isPlaceholder 
                          ? promo.image 
                          : `https://loremflickr.com/800/800/${searchTerm}`;
 
@@ -191,6 +192,13 @@ function copyCoupon(id) {
 
 // Função de Fallback Inteligente para Imagens
 function handleImageError(img, term) {
+    // Se a imagem carregada for um placeholder que não queremos, forçamos a troca
+    if (img.src.includes('placeholder') && !img.dataset.triedSmartFallback) {
+        img.dataset.triedSmartFallback = 'true';
+        img.src = `https://loremflickr.com/800/800/${term}`;
+        return;
+    }
+
     // Se a primeira tentativa de imagem inteligente (LoremFlickr) falhar
     if (!img.dataset.triedSmartFallback) {
         img.dataset.triedSmartFallback = 'true';

@@ -59,82 +59,66 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
         const dataBuffer = fs.readFileSync(req.file.path);
         const parser = new PDFParse(new Uint8Array(dataBuffer));
         
-        // Extrair tudo de forma estruturada por página
-        const textResult = await parser.getText();
-        const imageResult = await parser.getImage({ imageDataUrl: true });
+        console.log('Iniciando extração de texto e imagens...');
+        const [textResult, imageResult] = await Promise.all([
+            parser.getText().catch(e => { console.error('Erro getText:', e); return { pages: [] }; }),
+            parser.getImage({ imageDataUrl: true }).catch(e => { console.error('Erro getImage:', e); return { pages: [] }; })
+        ]);
 
-        if (!textResult || !textResult.pages) {
-            throw new Error('Não foi possível extrair páginas do PDF. O arquivo pode estar corrompido ou protegido.');
+        if (!textResult || !textResult.pages || textResult.pages.length === 0) {
+            throw new Error('Não foi possível extrair texto do PDF. O arquivo pode estar vazio ou protegido.');
         }
 
-        const newPromos = [];
-        const totalPages = textResult.pages.length;
+        const totalPages = Math.min(textResult.pages.length, 20); // Limite de 20 páginas para evitar timeout no Vercel
+        console.log(`Processando ${totalPages} páginas em paralelo...`);
 
-        console.log(`Processando PDF com ${totalPages} páginas...`);
+        // Processar páginas em paralelo
+        const pagePromises = textResult.pages.slice(0, totalPages).map(async (page, i) => {
+            try {
+                const pageText = page.text || "";
+                const pageImages = (imageResult && imageResult.pages && imageResult.pages[i]) ? imageResult.pages[i].images : [];
 
-        for (let i = 0; i < totalPages; i++) {
-            const pageText = textResult.pages[i]?.text || "";
-            const pageImages = (imageResult && imageResult.pages && imageResult.pages[i]) ? imageResult.pages[i].images : [];
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const uniqueLinks = [...new Set(pageText.match(urlRegex) || [])];
 
-            // Extrair links via Regex no texto da página
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const uniqueLinks = [...new Set(pageText.match(urlRegex) || [])];
+                if (uniqueLinks.length === 0) return [];
 
-            // Se não houver links nesta página, pula para a próxima
-            if (uniqueLinks.length === 0) continue;
+                let productImage = "assets/placeholder.png";
+                if (pageImages.length > 0) {
+                    try {
+                        const img = pageImages[0];
+                        const imgName = `promo_${Date.now()}_p${i}_${Math.random().toString(36).substr(2, 5)}.png`;
+                        
+                        let buffer;
+                        if (img.data.startsWith('data:')) {
+                            const base64Data = img.data.replace(/^data:image\/\w+;base64,/, "");
+                            buffer = Buffer.from(base64Data, 'base64');
+                        } else {
+                            buffer = Buffer.from(img.data);
+                        }
 
-            // Processar a primeira imagem da página como imagem principal
-            let productImage = "assets/placeholder.png";
-            if (pageImages.length > 0) {
-                try {
-                    const img = pageImages[0];
-                    const imgName = `promo_${Date.now()}_p${i}.png`;
-                    
-                    // Converter DataURL para Buffer se necessário
-                    let buffer;
-                    if (img.data.startsWith('data:')) {
-                        const base64Data = img.data.replace(/^data:image\/\w+;base64,/, "");
-                        buffer = Buffer.from(base64Data, 'base64');
-                    } else {
-                        buffer = Buffer.from(img.data);
-                    }
-
-                    // Upload para Supabase Storage (Bucket: 'promos')
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('promos')
-                        .upload(imgName, buffer, {
-                            contentType: 'image/png',
-                            upsert: true
-                        });
-
-                    if (uploadError) {
-                        console.error('Erro no upload do Supabase Storage:', uploadError.message);
-                    } else {
-                        // Obter URL pública
-                        const { data: { publicUrl } } = supabase.storage
+                        const { data: uploadData, error: uploadError } = await supabase.storage
                             .from('promos')
-                            .getPublicUrl(imgName);
-                        productImage = publicUrl;
-                    }
-                } catch (storageError) {
-                    console.error('Erro crítico no Supabase Storage:', storageError);
+                            .upload(imgName, buffer, { contentType: 'image/png', upsert: true });
+
+                        if (!uploadError) {
+                            const { data: { publicUrl } } = supabase.storage.from('promos').getPublicUrl(imgName);
+                            productImage = publicUrl;
+                        } else {
+                            console.warn(`Falha no upload da imagem p${i}:`, uploadError.message);
+                        }
+                    } catch (e) { console.error(`Erro ao processar imagem p${i}:`, e); }
                 }
-            }
 
-            // Tentar encontrar preço (Padrão R$ 99,99)
-            const priceRegex = /R\$\s?(\d+[\d.,]*)/g;
-            const priceMatches = pageText.match(priceRegex);
-            const price = priceMatches ? priceMatches[priceMatches.length - 1] : "Consulte no site";
+                const priceRegex = /R\$\s?(\d+[\d.,]*)/g;
+                const priceMatches = pageText.match(priceRegex);
+                const price = priceMatches ? priceMatches[priceMatches.length - 1] : "Consulte no site";
 
-            // Tentar extrair nome
-            const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
-            const potentialNames = lines.filter(l => 
-                !l.includes('http') && !l.includes('R$') && !l.toUpperCase().includes('CUPOM')
-            );
-            const name = potentialNames.length > 0 ? potentialNames[0] : `Produto da Página ${i + 1}`;
+                const lines = pageText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
+                const potentialNames = lines.filter(l => !l.includes('http') && !l.includes('R$') && !l.toUpperCase().includes('CUPOM'));
+                const name = potentialNames.length > 0 ? potentialNames[0] : `Produto da Página ${i + 1}`;
 
-            for (const url of uniqueLinks) {
-                newPromos.push({
+                return uniqueLinks.map(url => ({
                     name: name,
                     old_price: "---",
                     current_price: price,
@@ -143,31 +127,47 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
                     affiliate_link: url,
                     urgency: "Verificado!",
                     coupon: globalCoupon
-                });
+                }));
+            } catch (pageErr) {
+                console.error(`Erro na página ${i}:`, pageErr);
+                return [];
             }
-        }
+        });
 
-        // Salvar no Supabase
+        const results = await Promise.all(pagePromises);
+        const newPromos = results.flat();
+
         if (newPromos.length > 0) {
+            console.log(`Salvando ${newPromos.length} anúncios no Supabase...`);
             const { error: dbError } = await supabase.from('promos').insert(newPromos);
-            if (dbError) {
-                console.error('Erro ao salvar no banco de dados Supabase:', dbError.message);
-                throw dbError;
-            }
+            if (dbError) throw new Error(`Erro no Banco de Dados: ${dbError.message}`);
         }
 
-        if (fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-        }
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
         if (newPromos.length === 0) {
-            return res.status(422).json({ error: 'Nenhum produto ou link válido foi encontrado neste PDF. Certifique-se de que o PDF contém links e textos legíveis.' });
+            return res.status(422).json({ error: 'Nenhum link de produto encontrado no PDF.' });
         }
 
-        res.json({ message: 'Processamento concluído!', count: newPromos.length });
+        res.json({ message: 'Sucesso!', count: newPromos.length });
     } catch (error) {
-        console.error('Erro Geral no Processamento do PDF:', error);
-        res.status(500).json({ error: 'Erro ao processar PDF: ' + error.message });
+        console.error('ERRO NO PROCESSAMENTO:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/debug', async (req, res) => {
+    try {
+        const { error } = await supabase.from('promos').select('count', { count: 'exact', head: true });
+        res.json({ 
+            status: 'ok', 
+            supabase_connected: !error, 
+            error: error?.message,
+            url_configured: !!process.env.SUPABASE_URL,
+            key_configured: !!process.env.SUPABASE_KEY
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 

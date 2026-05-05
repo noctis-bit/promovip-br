@@ -23,6 +23,15 @@ function getSupabase() {
     return createClient(url, key);
 }
 
+// Middleware de segurança para o n8n e Admin
+const authenticate = (req, res, next) => {
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    if (apiKey && apiKey === process.env.API_KEY) {
+        return next();
+    }
+    res.status(401).json({ error: 'Acesso não autorizado. Chave de API inválida.' });
+};
+
 // Endpoint para o frontend pegar as chaves públicas com segurança
 app.get('/api/config', (req, res) => {
     res.json({
@@ -54,7 +63,7 @@ async function extractNinjaImages(pdfDoc) {
     return images;
 }
 
-app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
+app.post('/api/upload-pdf', authenticate, upload.single('pdf'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
         const dataBuffer = fs.readFileSync(req.file.path);
@@ -140,7 +149,7 @@ app.get('/api/image-finder', async (req, res) => {
 });
 
 // Adicionar produto manual
-app.post('/api/promos', async (req, res) => {
+app.post('/api/promos', authenticate, async (req, res) => {
     try {
         const supabase = getSupabase();
         const { name, current_price, affiliate_link, image, category, store, coupon } = req.body;
@@ -165,8 +174,64 @@ app.post('/api/promos', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// NOVO: Registro Inteligente (Recebe URL e faz tudo sozinho)
+app.post('/api/auto-register', authenticate, async (req, res) => {
+    const { url, category, store, coupon } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL é obrigatória' });
+
+    try {
+        const response = await axios.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36' },
+            timeout: 8000
+        });
+        const $ = cheerio.load(response.data);
+        
+        const name = $('meta[property="og:title"]').attr('content') || $('title').text() || 'Produto sem nome';
+        const image = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content') || "";
+        
+        // Tenta achar o preço (lógica básica, pode variar por loja)
+        let price = "Consulte";
+        const priceSelectors = [
+            'meta[property="product:price:amount"]',
+            'meta[property="og:price:amount"]',
+            '.andes-money-amount__fraction', // Mercado Livre
+            '[data-testid="price-value"]',
+            '.price-tag-fraction'
+        ];
+        
+        for (let selector of priceSelectors) {
+            const val = $(selector).first().text() || $(selector).attr('content');
+            if (val) {
+                price = val.includes('R$') ? val : `R$ ${val}`;
+                break;
+            }
+        }
+
+        const supabase = getSupabase();
+        const newPromo = {
+            name: name.substring(0, 100),
+            current_price: price,
+            affiliate_link: url,
+            image: image || "/assets/placeholder.png",
+            category: category || "Geral",
+            store: store || "Loja Parceira",
+            coupon: coupon || "",
+            old_price: "---",
+            urgency: "Automação n8n",
+            discount: coupon ? `CUPOM: ${coupon}` : "Oferta!"
+        };
+
+        const { error } = await supabase.from('promos').insert([newPromo]);
+        if (error) throw error;
+        
+        res.json({ message: 'Produto automatizado com sucesso!', product: newPromo });
+    } catch (error) {
+        res.status(500).json({ error: 'Falha na automação: ' + error.message });
+    }
+});
+
 // Atualizar apenas texto via API (Imagem agora é direto no front)
-app.put('/api/promos/:id', async (req, res) => {
+app.put('/api/promos/:id', authenticate, async (req, res) => {
     try {
         const supabase = getSupabase();
         const { id } = req.params;
@@ -182,7 +247,7 @@ app.put('/api/promos/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.delete('/api/promos/:id', async (req, res) => {
+app.delete('/api/promos/:id', authenticate, async (req, res) => {
     try {
         const supabase = getSupabase();
         await supabase.from('promos').delete().eq('id', req.params.id);

@@ -261,6 +261,17 @@
             width: 90%;
             max-width: 500px;
             border: 1px solid rgba(255,255,255,0.1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        /* Estilização da barra de rolagem do modal */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: var(--red);
+            border-radius: 10px;
         }
 
         .modal-content h3 {

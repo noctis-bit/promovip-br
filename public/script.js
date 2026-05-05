@@ -237,21 +237,10 @@ function handleImageError(img) {
 }
 
 function tryNextFallback(img, term) {
-    // 2. Tenta LoremFlickr com uma variante de busca
-    if (!img.dataset.triedSmart) {
-        img.dataset.triedSmart = 'true';
-        img.src = `https://loremflickr.com/800/800/${term},item`;
-        img.dataset.handlingError = '';
-        return;
-    }
-
-    // 3. Fallback Final: Imagem de Texto Estilizada (Nunca Falha)
-    if (!img.dataset.triedFinal) {
-        img.dataset.triedFinal = 'true';
-        const cleanTerm = decodeURIComponent(term).toUpperCase();
-        img.src = `https://placehold.co/800x800/1a1a1a/e50914?text=${cleanTerm}`;
-        img.dataset.handlingError = '';
-    }
+    console.log('Recuperação falhou, usando placeholder oficial.');
+    img.onerror = null;
+    img.src = 'assets/placeholder.png';
+    img.dataset.handlingError = 'true';
 }
 
 function copyCoupon(id) {

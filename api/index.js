@@ -149,7 +149,7 @@ app.post('/api/promos', async (req, res) => {
             name,
             current_price,
             affiliate_link,
-            image: image || "https://loremflickr.com/800/800/product",
+            image: image || "/assets/placeholder.png",
             category: category || "Geral",
             store: store || "Loja Parceira",
             coupon: coupon || "",

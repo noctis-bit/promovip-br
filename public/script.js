@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearSpan = document.getElementById('year');
     if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
+    let allPromos = [];
+
     // Carregar dados iniciais
     loadContent();
 
@@ -13,10 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             if (data.promos && data.promos.length > 0) {
-                offersGrid.innerHTML = '';
-                data.promos.forEach(promo => {
-                    offersGrid.appendChild(createProductCard(promo));
-                });
+                allPromos = data.promos;
+                renderPromos(allPromos);
             }
 
             if (data.coupons && data.coupons.length > 0) {
@@ -45,6 +45,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function renderPromos(promos) {
+        offersGrid.innerHTML = '';
+        if (promos.length === 0) {
+            offersGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray);">Nenhuma promoção encontrada nesta categoria.</div>';
+            return;
+        }
+        promos.forEach(promo => {
+            offersGrid.appendChild(createProductCard(promo));
+        });
+    }
+
+    window.filterByCategory = (category) => {
+        console.log('Filtrando por:', category);
+        if (category === 'Todas') {
+            renderPromos(allPromos);
+        } else {
+            const filtered = allPromos.filter(p => (p.category || 'Geral') === category);
+            renderPromos(filtered);
+        }
+        
+        // Scroll suave para a seção de ofertas
+        const offersSection = document.getElementById('ofertas');
+        if (offersSection) {
+            offersSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     function createProductCard(promo) {
         const article = document.createElement('article');
         article.className = 'product-card';
@@ -62,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         article.innerHTML = `
             <div class="discount-badge">${promo.discount}</div>
+            <div class="category-tag">${promo.category || 'Geral'}</div>
             <div class="card-image">
                 <img src="${imageSrc}" 
                      alt="${promo.name}" 

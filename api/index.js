@@ -93,7 +93,8 @@ app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
             newPromos.push({
                 name, old_price: "---", current_price: price, 
                 discount: globalCoupon ? `CUPOM: ${globalCoupon}` : "Oferta!",
-                image: productImage, affiliate_link: link, urgency: "Verificado!", coupon: globalCoupon
+                image: productImage, affiliate_link: link, urgency: "Verificado!", coupon: globalCoupon,
+                category: "Geral"
             });
         }
         if (newPromos.length > 0) await supabase.from('promos').insert(newPromos);
@@ -142,9 +143,9 @@ app.put('/api/promos/:id', async (req, res) => {
     try {
         const supabase = getSupabase();
         const { id } = req.params;
-        const { name, current_price, affiliate_link, image } = req.body;
+        const { name, current_price, affiliate_link, image, category } = req.body;
         
-        let updateData = { name, current_price, affiliate_link };
+        let updateData = { name, current_price, affiliate_link, category };
         if (image) updateData.image = image;
 
         const { error } = await supabase.from('promos').update(updateData).eq('id', id);

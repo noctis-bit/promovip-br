@@ -51,7 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('lastDiceRoll', today);
             
             if (randomPromo.affiliateLink && randomPromo.affiliateLink !== '#') {
-                window.open(randomPromo.affiliateLink, '_blank');
+                // Redirecionamento direto na mesma aba
+                window.location.href = randomPromo.affiliateLink;
             } else {
                 alert('A sorte te levou para: ' + randomPromo.name);
             }

@@ -305,13 +305,9 @@ nav {
   100% { transform: rotateX(360deg) rotateY(720deg); }
 }
 
-.dice.spinning {
-  animation: dice-spin 0.4s linear infinite !important;
-}
-
-@keyframes dice-spin {
-  0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
-  100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+.dice.glow {
+  filter: drop-shadow(0 0 25px var(--red));
+  transition: transform 1.2s cubic-bezier(0.15, 0.85, 0.35, 1.2), filter 0.3s ease;
 }
 
 .dice-label {

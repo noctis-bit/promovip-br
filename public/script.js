@@ -27,15 +27,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Som de impacto visual (opcional/feedback)
         diceTrigger.style.pointerEvents = 'none';
-        dice.classList.add('spinning');
+        dice.style.animation = 'none'; // Para o idle
+        
+        // Gera rotações aleatórias massivas para efeito 3D real
+        const xRand = Math.floor(Math.random() * 10 + 10) * 90;
+        const yRand = Math.floor(Math.random() * 10 + 10) * 90;
+        
+        dice.style.transform = `rotateX(${xRand}deg) rotateY(${yRand}deg)`;
+        dice.classList.add('glow');
 
         // Escolhe uma promo aleatória
         const randomPromo = allPromos[Math.floor(Math.random() * allPromos.length)];
 
         setTimeout(() => {
-            dice.classList.remove('spinning');
+            dice.classList.remove('glow');
             localStorage.setItem('lastDiceRoll', today);
             
             if (randomPromo.affiliateLink && randomPromo.affiliateLink !== '#') {
@@ -44,8 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('A sorte te levou para: ' + randomPromo.name);
             }
             
-            diceTrigger.style.pointerEvents = 'auto';
-        }, 1500);
+            // Volta para a animação idle após um tempo
+            setTimeout(() => {
+                dice.style.animation = 'dice-idle 15s infinite linear';
+                diceTrigger.style.pointerEvents = 'auto';
+            }, 2000);
+            
+        }, 1200);
     }
 
     // Carregar dados iniciais

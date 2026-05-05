@@ -16,8 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function rollDice() {
         const today = new Date().toDateString();
         const lastRoll = localStorage.getItem('lastDiceRoll');
+        
+        // MODO SECRETO: Se o URL tiver ?admin=true, ativa giros infinitos para este navegador
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('admin') === 'true') localStorage.setItem('promo_admin', 'true');
+        
+        const isAdmin = localStorage.getItem('promo_admin') === 'true';
 
-        if (lastRoll === today) {
+        if (lastRoll === today && !isAdmin) {
             alert('🎲 Você já usou seu giro da sorte hoje! Volte amanhã para ganhar uma nova oferta secreta.');
             return;
         }

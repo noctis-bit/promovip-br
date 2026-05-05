@@ -224,7 +224,108 @@ nav {
   line-height: 0.92;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  margin-bottom: 24px;
+}
+
+/* ── LUCKY DICE ── */
+.hero-main-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .hero-main-flex {
+    flex-direction: column;
+    gap: 40px;
+    text-align: center;
+  }
+}
+
+.dice-scene {
+  width: 80px;
+  height: 80px;
+  perspective: 600px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 35px;
+  transition: transform 0.3s var(--transition);
+}
+.dice-scene:hover { transform: scale(1.1); }
+
+.dice {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: dice-idle 15s infinite linear;
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dice-face {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: #111;
+  border: 2px solid var(--red);
+  border-radius: 12px;
+  box-shadow: inset 0 0 15px rgba(229,9,20,0.3), 0 0 10px rgba(0,0,0,0.5);
+}
+
+.dice-face::before {
+    content: '';
+    display: block;
+    width: 12px; height: 12px;
+    background: var(--red);
+    border-radius: 50%;
+    position: absolute;
+    box-shadow: 0 0 8px var(--red);
+}
+
+.dice-face.front  { transform: rotateY(  0deg) translateZ(40px); }
+.dice-face.back   { transform: rotateY(180deg) translateZ(40px); }
+.dice-face.right  { transform: rotateY( 90deg) translateZ(40px); }
+.dice-face.left   { transform: rotateY(-90deg) translateZ(40px); }
+.dice-face.top    { transform: rotateX( 90deg) translateZ(40px); }
+.dice-face.bottom { transform: rotateX(-90deg) translateZ(40px); }
+
+.front::before { top: 32px; left: 32px; }
+.back::before { top: 12px; left: 12px; box-shadow: 44px 0 0 var(--red), 0 22px 0 var(--red), 44px 22px 0 var(--red), 0 44px 0 var(--red), 44px 44px 0 var(--red); }
+.right::before { top: 12px; left: 12px; box-shadow: 22px 22px 0 var(--red), 44px 44px 0 var(--red); }
+.left::before { top: 12px; left: 12px; box-shadow: 44px 0 0 var(--red), 0 44px 0 var(--red), 44px 44px 0 var(--red); }
+.top::before { top: 12px; left: 12px; box-shadow: 44px 44px 0 var(--red); }
+.bottom::before { top: 12px; left: 12px; box-shadow: 44px 0 0 var(--red), 22px 22px 0 var(--red), 0 44px 0 var(--red), 44px 44px 0 var(--red); }
+
+@keyframes dice-idle {
+  0% { transform: rotateX(0) rotateY(0); }
+  100% { transform: rotateX(360deg) rotateY(720deg); }
+}
+
+.dice.spinning {
+  animation: dice-spin 0.4s linear infinite !important;
+}
+
+@keyframes dice-spin {
+  0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+  100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+}
+
+.dice-label {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--white);
+  background: var(--red);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 10px rgba(229,9,20,0.4);
+  white-space: nowrap;
 }
 .hero h1 .highlight {
   color: var(--red);

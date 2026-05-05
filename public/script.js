@@ -6,6 +6,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let allPromos = [];
 
+    const diceTrigger = document.getElementById('diceTrigger');
+    const dice = document.getElementById('dice');
+
+    if (diceTrigger) {
+        diceTrigger.addEventListener('click', rollDice);
+    }
+
+    function rollDice() {
+        const today = new Date().toDateString();
+        const lastRoll = localStorage.getItem('lastDiceRoll');
+
+        if (lastRoll === today) {
+            alert('🎲 Você já usou seu giro da sorte hoje! Volte amanhã para ganhar uma nova oferta secreta.');
+            return;
+        }
+
+        if (!allPromos || allPromos.length === 0) {
+            alert('Aguarde as ofertas carregarem...');
+            return;
+        }
+
+        // Som de impacto visual (opcional/feedback)
+        diceTrigger.style.pointerEvents = 'none';
+        dice.classList.add('spinning');
+
+        // Escolhe uma promo aleatória
+        const randomPromo = allPromos[Math.floor(Math.random() * allPromos.length)];
+
+        setTimeout(() => {
+            dice.classList.remove('spinning');
+            localStorage.setItem('lastDiceRoll', today);
+            
+            if (randomPromo.affiliateLink && randomPromo.affiliateLink !== '#') {
+                window.open(randomPromo.affiliateLink, '_blank');
+            } else {
+                alert('A sorte te levou para: ' + randomPromo.name);
+            }
+            
+            diceTrigger.style.pointerEvents = 'auto';
+        }, 1500);
+    }
+
     // Carregar dados iniciais
     loadContent();
 

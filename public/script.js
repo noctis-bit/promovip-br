@@ -69,6 +69,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carregar dados iniciais
     loadContent();
 
+    // --- BUSCA INTELIGENTE ---
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+
+    if (searchBtn) searchBtn.addEventListener('click', performSearch);
+    if (searchInput) {
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+    }
+
+    function performSearch() {
+        const query = (searchInput.value || '').toLowerCase().trim();
+        console.log('Buscando por:', query);
+        
+        if (!query) {
+            renderPromos(allPromos);
+            return;
+        }
+
+        const filtered = allPromos.filter(p => {
+            const name = (p.name || '').toLowerCase();
+            const category = (p.category || 'Geral').toLowerCase();
+            const store = (p.store || 'Loja Parceira').toLowerCase();
+            
+            return name.includes(query) || category.includes(query) || store.includes(query);
+        });
+
+        renderPromos(filtered);
+        
+        const offersSection = document.getElementById('ofertas');
+        if (offersSection) offersSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
     async function loadContent() {
         try {
             const res = await fetch('/api/promos');

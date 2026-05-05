@@ -302,6 +302,20 @@
                         <input type="file" id="pdfFile" accept=".pdf" style="display: none" onchange="updateFileName()">
                     </div>
                     <div class="form-group">
+                        <label for="globalStore">Loja deste PDF</label>
+                        <select id="globalStore" style="width: 100%; padding: 12px 16px; background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--white); font-family: var(--font-body); font-size: 16px;">
+                            <option value="Loja Parceira">Selecione a Loja...</option>
+                            <option value="Amazon">Amazon</option>
+                            <option value="Shopee">Shopee</option>
+                            <option value="Mercado Livre">Mercado Livre</option>
+                            <option value="Magalu">Magalu</option>
+                            <option value="Casas Bahia">Casas Bahia</option>
+                            <option value="AliExpress">AliExpress</option>
+                            <option value="Samsung">Samsung</option>
+                            <option value="Outra">Outra Loja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="globalCoupon">Cupom Padrão (opcional)</label>
                         <input type="text" id="globalCoupon" placeholder="Ex: PROMO10">
                     </div>
@@ -364,6 +378,19 @@
                 <div class="form-group">
                     <label>Link de Afiliado</label>
                     <input type="text" id="editLink" required>
+                </div>
+                <div class="form-group">
+                    <label>Loja Parceira</label>
+                    <select id="editStore" style="width: 100%; padding: 14px 18px; background: #000; border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; font-family: var(--font-body); font-size: 16px;">
+                        <option value="Amazon">Amazon</option>
+                        <option value="Shopee">Shopee</option>
+                        <option value="Mercado Livre">Mercado Livre</option>
+                        <option value="Magalu">Magalu</option>
+                        <option value="Casas Bahia">Casas Bahia</option>
+                        <option value="AliExpress">AliExpress</option>
+                        <option value="Samsung">Samsung</option>
+                        <option value="Loja Parceira">Outra / Loja Parceira</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Nova Imagem (opcional)</label>
@@ -430,8 +457,12 @@
             if (!fileInput.files[0]) return alert('Selecione um arquivo.');
 
             const formData = new FormData();
+            const coupon = document.getElementById('globalCoupon').value;
+            const store = document.getElementById('globalStore').value;
+            
             formData.append('pdf', fileInput.files[0]);
-            formData.append('coupon', document.getElementById('globalCoupon').value);
+            formData.append('coupon', coupon);
+            formData.append('store', store);
 
             status.textContent = 'Processando...';
             spinner.style.display = 'block';
@@ -486,12 +517,12 @@
                             <img src="${p.image}" class="item-thumb" onerror="this.src='assets/placeholder.png'">
                             <div class="item-text">
                                 <strong>${p.name}</strong>
-                                <small>${p.currentPrice}</small>
+                                <small>${p.currentPrice} | ${p.store || 'Loja Parceira'}</small>
                                 <span style="background: rgba(229,9,20,0.2); color: var(--red); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-left: 10px; border: 1px solid rgba(229,9,20,0.3); text-transform: uppercase;">${p.category || 'Geral'}</span>
                             </div>
                         </div>
                         <div class="btn-group">
-                            <button class="btn-action btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}', '${p.category || 'Geral'}')">Editar</button>
+                            <button class="btn-action btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}', '${p.category || 'Geral'}', '${(p.store || "Loja Parceira").replace(/'/g, "\\'")}')">Editar</button>
                             <button class="btn-action btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
                         </div>
                     `;
@@ -507,11 +538,12 @@
         }
 
         // --- EDITAR ---
-        function openEditModal(id, name, price, link, category) {
+        function openEditModal(id, name, price, link, category, store) {
             document.getElementById('editId').value = id;
             document.getElementById('editName').value = name;
             document.getElementById('editPrice').value = price;
             document.getElementById('editLink').value = link;
+            document.getElementById('editStore').value = store || 'Loja Parceira';
             document.getElementById('editCategory').value = category || 'Geral';
             document.getElementById('editModal').style.display = 'flex';
         }
@@ -547,7 +579,8 @@
                     name: document.getElementById('editName').value,
                     current_price: document.getElementById('editPrice').value,
                     affiliate_link: document.getElementById('editLink').value,
-                    category: document.getElementById('editCategory').value
+                    category: document.getElementById('editCategory').value,
+                    store: document.getElementById('editStore').value
                 };
                 if (imageUrl) payload.image = imageUrl;
 

@@ -69,12 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carregar dados iniciais
     loadContent();
 
-    // --- BUSCA INTELIGENTE ---
+    // --- BUSCA INTELIGENTE (REAL-TIME) ---
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
 
     if (searchBtn) searchBtn.addEventListener('click', performSearch);
     if (searchInput) {
+        // Busca enquanto digita para ser instantânea
+        searchInput.addEventListener('input', performSearch);
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') performSearch();
         });
@@ -82,25 +84,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function performSearch() {
         const query = (searchInput.value || '').toLowerCase().trim();
-        console.log('Buscando por:', query);
         
         if (!query) {
             renderPromos(allPromos);
             return;
         }
 
+        // Divide a busca em palavras (Ex: "batom amazon" vira ["batom", "amazon"])
+        const keywords = query.split(/\s+/);
+
         const filtered = allPromos.filter(p => {
-            const name = (p.name || '').toLowerCase();
-            const category = (p.category || 'Geral').toLowerCase();
-            const store = (p.store || 'Loja Parceira').toLowerCase();
-            
-            return name.includes(query) || category.includes(query) || store.includes(query);
+            const content = `${p.name} ${p.category || 'Geral'} ${p.store || 'Loja Parceira'}`.toLowerCase();
+            // Verifica se TODAS as palavras digitadas existem no produto (Lógica E)
+            return keywords.every(key => content.includes(key));
         });
 
         renderPromos(filtered);
-        
-        const offersSection = document.getElementById('ofertas');
-        if (offersSection) offersSection.scrollIntoView({ behavior: 'smooth' });
     }
 
     async function loadContent() {

@@ -139,14 +139,40 @@ app.get('/api/image-finder', async (req, res) => {
     }
 });
 
+// Adicionar produto manual
+app.post('/api/promos', async (req, res) => {
+    try {
+        const supabase = getSupabase();
+        const { name, current_price, affiliate_link, image, category, store, coupon } = req.body;
+        
+        const newPromo = {
+            name,
+            current_price,
+            affiliate_link,
+            image: image || "https://loremflickr.com/800/800/product",
+            category: category || "Geral",
+            store: store || "Loja Parceira",
+            coupon: coupon || "",
+            old_price: "---",
+            urgency: "Oferta Manual!",
+            discount: coupon ? `CUPOM: ${coupon}` : "Oferta!"
+        };
+
+        const { error } = await supabase.from('promos').insert([newPromo]);
+        if (error) return res.status(400).json({ error: error.message });
+        
+        res.json({ message: 'Produto adicionado!' });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 // Atualizar apenas texto via API (Imagem agora é direto no front)
 app.put('/api/promos/:id', async (req, res) => {
     try {
         const supabase = getSupabase();
         const { id } = req.params;
-        const { name, current_price, affiliate_link, image, category, store } = req.body;
+        const { name, current_price, affiliate_link, image, category, store, coupon } = req.body;
         
-        let updateData = { name, current_price, affiliate_link, category, store };
+        let updateData = { name, current_price, affiliate_link, category, store, coupon };
         if (image) updateData.image = image;
 
         const { error } = await supabase.from('promos').update(updateData).eq('id', id);

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Painel Admin | PromoVIPBR</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -329,7 +332,10 @@
         <!-- TAB: ANÚNCIOS ATIVOS -->
         <div id="tab-products" class="tab-content" style="display: none">
             <div class="admin-section">
-                <h2>🛍️ Gerenciar Anúncios</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🛍️ Gerenciar Anúncios</h2>
+                    <button class="btn-submit" style="width: auto; padding: 10px 20px; background: #2ecc71" onclick="openAddModal()">➕ Novo Produto</button>
+                </div>
                 <div class="list-container" id="productList">
                     <!-- Carregado via JS -->
                 </div>
@@ -393,6 +399,10 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Cupom de Desconto</label>
+                    <input type="text" id="editCoupon" placeholder="Ex: GANHEI10">
+                </div>
+                <div class="form-group">
                     <label>Nova Imagem (opcional)</label>
                     <input type="file" id="editImage" accept="image/*">
                 </div>
@@ -414,6 +424,49 @@
                 <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn-submit" style="flex: 1">Salvar</button>
                     <button type="button" onclick="closeEditModal()" class="btn-submit" style="background: #444; flex: 1">Voltar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- MODAL ADICIONAR MANUAL -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h3>Novo Produto Manual ➕</h3>
+            <form id="addForm">
+                <div class="form-group"><label>Nome do Produto</label><input type="text" id="addName" required></div>
+                <div class="form-group"><label>Preço</label><input type="text" id="addPrice" placeholder="Ex: R$ 99,90" required></div>
+                <div class="form-group"><label>Link de Afiliado</label><input type="text" id="addLink" required></div>
+                <div class="form-group">
+                    <label>Loja Parceira</label>
+                    <select id="addStore" style="width: 100%; padding: 14px 18px; background: #000; border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff;">
+                        <option value="Amazon">Amazon</option>
+                        <option value="Shopee">Shopee</option>
+                        <option value="Mercado Livre">Mercado Livre</option>
+                        <option value="Magalu">Magalu</option>
+                        <option value="AliExpress">AliExpress</option>
+                        <option value="Samsung">Samsung</option>
+                        <option value="Loja Parceira">Outra</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="addCategory" style="width: 100%; padding: 14px 18px; background: #000; border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff;">
+                        <option value="Geral">Geral</option>
+                        <option value="Tecnologia">Tecnologia</option>
+                        <option value="Moda">Moda</option>
+                        <option value="Casa">Casa</option>
+                        <option value="Beleza">Beleza</option>
+                        <option value="Alimentação">Alimentação</option>
+                        <option value="Games">Games</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Cupom (opcional)</label><input type="text" id="addCoupon"></div>
+                <div class="form-group"><label>Imagem</label><input type="file" id="addImage" accept="image/*"></div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-submit" style="flex: 1; background: #2ecc71">Cadastrar</button>
+                    <button type="button" class="btn-submit" style="flex: 1; background: #e74c3c" onclick="closeAddModal()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -522,7 +575,7 @@
                             </div>
                         </div>
                         <div class="btn-group">
-                            <button class="btn-action btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}', '${p.category || 'Geral'}', '${(p.store || "Loja Parceira").replace(/'/g, "\\'")}')">Editar</button>
+                            <button class="btn-action btn-edit" onclick="openEditModal('${p.id}', '${safeName}', '${safePrice}', '${safeLink}', '${p.category || 'Geral'}', '${(p.store || "Loja Parceira").replace(/'/g, "\\'")}', '${p.coupon || ""}')">Editar</button>
                             <button class="btn-action btn-delete" onclick="deleteProduct('${p.id}')">Excluir</button>
                         </div>
                     `;
@@ -538,13 +591,14 @@
         }
 
         // --- EDITAR ---
-        function openEditModal(id, name, price, link, category, store) {
+        function openEditModal(id, name, price, link, category, store, coupon) {
             document.getElementById('editId').value = id;
             document.getElementById('editName').value = name;
             document.getElementById('editPrice').value = price;
             document.getElementById('editLink').value = link;
             document.getElementById('editStore').value = store || 'Loja Parceira';
             document.getElementById('editCategory').value = category || 'Geral';
+            document.getElementById('editCoupon').value = coupon || '';
             document.getElementById('editModal').style.display = 'flex';
         }
 
@@ -580,7 +634,8 @@
                     current_price: document.getElementById('editPrice').value,
                     affiliate_link: document.getElementById('editLink').value,
                     category: document.getElementById('editCategory').value,
-                    store: document.getElementById('editStore').value
+                    store: document.getElementById('editStore').value,
+                    coupon: document.getElementById('editCoupon').value
                 };
                 if (imageUrl) payload.image = imageUrl;
 
@@ -646,6 +701,56 @@
             await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
             loadCoupons();
         }
+
+        // --- ADICIONAR MANUAL ---
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusBtn = e.target.querySelector('button[type="submit"]');
+            statusBtn.textContent = 'Cadastrando...';
+            statusBtn.disabled = true;
+
+            try {
+                let imageUrl = null;
+                const imgFile = document.getElementById('addImage').files[0];
+                if (imgFile && supabaseClient) {
+                    const fileName = `manual_${Date.now()}_${imgFile.name}`;
+                    const { error: uploadError } = await supabaseClient.storage.from('promos').upload(fileName, imgFile);
+                    if (!uploadError) {
+                        const { data: urlData } = supabaseClient.storage.from('promos').getPublicUrl(fileName);
+                        imageUrl = urlData.publicUrl;
+                    }
+                }
+
+                const payload = {
+                    name: document.getElementById('addName').value,
+                    current_price: document.getElementById('addPrice').value,
+                    affiliate_link: document.getElementById('addLink').value,
+                    category: document.getElementById('addCategory').value,
+                    store: document.getElementById('addStore').value,
+                    coupon: document.getElementById('addCoupon').value,
+                    image: imageUrl
+                };
+
+                const res = await fetch('/api/promos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    closeAddModal();
+                    loadProducts();
+                    e.target.reset();
+                }
+            } catch (err) { console.error(err); }
+            finally {
+                statusBtn.textContent = 'Cadastrar';
+                statusBtn.disabled = false;
+            }
+        });
     </script>
 </body>
 </html>
